@@ -12,6 +12,11 @@
 #include <d3dcompiler.h>
 #include <dxgi.h>
 
+// IMGUI
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_win32.h"
+#include "imgui/backends/imgui_impl_dx11.h"
+
 // Types
 using u8 = unsigned char;
 using u16 = unsigned short;

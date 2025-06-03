@@ -51,6 +51,10 @@ HWND InitWindow(HINSTANCE hInstance, int Width, int Height)
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	// Dear Imgui:
+	extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam)) { return true; }
+
 	LRESULT Result = 0;
 	switch (uMsg)
 	{
@@ -128,6 +132,8 @@ int WINAPI WinMain_DX11_Demo(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine,
 			UpdateWindow(hWindow);
 			Draw();
 		}
+
+		TermGraphics();
 	}
 
 	return 0;

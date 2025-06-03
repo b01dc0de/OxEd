@@ -7,6 +7,18 @@
     <Filter Include="src\hlsl">
       <UniqueIdentifier>{6da091d6-29e0-4f4c-af7d-951e23226075}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{63c5ba69-7ece-45f3-b7f7-a4bde4d0fdc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\imgui">
+      <UniqueIdentifier>{868b996a-a276-4522-b6b7-639fc27d70eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\imgui\src">
+      <UniqueIdentifier>{33dfa9e6-7fd8-4219-a534-0b159f65501c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\imgui\inc">
+      <UniqueIdentifier>{bac35c1e-ff94-4a5d-a608-58c695997bf6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Graphics_DX11.cpp">
@@ -21,6 +33,27 @@
     <ClCompile Include="src\Utils.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_demo.cpp">
+      <Filter>libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui.cpp">
+      <Filter>libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_draw.cpp">
+      <Filter>libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\backends\imgui_impl_dx11.cpp">
+      <Filter>libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_tables.cpp">
+      <Filter>libs\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_widgets.cpp">
+      <Filter>libs\imgui\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Graphics_DX11.h">
@@ -34,6 +67,18 @@
     </ClInclude>
     <ClInclude Include="src\Utils.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imgui.h">
+      <Filter>libs\imgui\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h">
+      <Filter>libs\imgui\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\backends\imgui_impl_win32.h">
+      <Filter>libs\imgui\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\imgui\imgui_internal.h">
+      <Filter>libs\imgui\src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -389,11 +389,36 @@ int InitGraphics()
         if (PSCodeBlob) { PSCodeBlob->Release(); }
     }
 
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplWin32_Init(hWindow);
+    ImGui_ImplDX11_Init(DX_Device, DX_ImmediateContext);
+
     return Result;
+}
+
+void TermGraphics()
+{
+    ImGui_ImplDX11_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
 }
 
 void UpdateAndDraw()
 {
+    // (Your code process and dispatch Win32 messages)
+    // Start the Dear ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow(); // Show demo window! :)
+
     UINT Offset = 0;
     m4f IdentityMatrix =
     {
@@ -440,6 +465,12 @@ void UpdateAndDraw()
 
         DX_ImmediateContext->DrawIndexed(ARRAYSIZE(Indices_Quad), 0u, 0u);
     }
+
+    // Rendering
+    // (Your code clears your framebuffer, renders your other stuff etc.)
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    // (Your code calls swapchain's Present() function)
 }
 
 void Draw()
