@@ -22,6 +22,36 @@ v3f Cross(v3f Left, v3f Right)
     return Result;
 }
 
+m2f IdentityM2F()
+{
+    return
+    {
+        { 1.0f, 0.0f },
+        { 0.0f, 1.0f }
+    };
+}
+
+m3f IdentityM3F()
+{
+    return
+    {
+        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f }
+    };
+}
+
+m4f IdentityM4F()
+{
+    return
+    {
+        { 1.0f, 0.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f, 0.0f },
+        { 0.0f, 0.0f, 0.0f, 1.0f }
+    };
+}
+
 m2f Mult(m2f Left, m2f Right)
 {
     m2f Result;

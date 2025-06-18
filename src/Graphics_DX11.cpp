@@ -21,12 +21,16 @@ ID3D11BlendState* DX_BlendState = nullptr;
 
 ID3D11Buffer* DX_TriangleVxBuffer = nullptr;
 ID3D11Buffer* DX_TriangleIxBuffer = nullptr;
+UINT NumTriIx = 0;
+
+ID3D11Buffer* DX_QuadVxBuffer = nullptr;
+ID3D11Buffer* DX_QuadIxBuffer = nullptr;
+UINT NumQuadIx = 0;
+
 ID3D11VertexShader* DX_ColorVxShader = nullptr;
 ID3D11PixelShader* DX_ColorPxShader = nullptr;
 ID3D11InputLayout* DX_ColorInputLayout = nullptr;
 
-ID3D11Buffer* DX_QuadVxBuffer = nullptr;
-ID3D11Buffer* DX_QuadIxBuffer = nullptr;
 ID3D11VertexShader* DX_TextureVxShader = nullptr;
 ID3D11PixelShader* DX_TexturePxShader = nullptr;
 ID3D11InputLayout* DX_TextureInputLayout = nullptr;
@@ -93,31 +97,70 @@ int CompileShaderHelper
     return Result;
 };
 
-VertexColor Vertices_Triangle[] =
+void Graphics_DX11::UpdateAndDraw()
 {
-    {{0.0f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
-    {{0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-    {{-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}}
-};
-UINT Indices_Triangle[] =
-{
-    0, 2, 1
-};
+    float ClearColor[4] = { 0.125f, 0.175f, 0.3f, 1.0f };
+    float fDepth = 1.0f;
+    DX_ImmediateContext->ClearRenderTargetView(DX_RenderTargetView, ClearColor);
+    DX_ImmediateContext->ClearDepthStencilView(DX_DepthStencilView, D3D11_CLEAR_DEPTH, fDepth, 0);
 
-VertexTexture Vertices_Quad[]
-{
-    {{-0.5f, +0.5f, +0.5f, +1.0f}, {+0.0f, +0.0f}},
-    {{+0.5f, +0.5f, +0.5f, +1.0f}, {+1.0f, +0.0f}},
-    {{-0.5f, -0.5f, +0.5f, +1.0f}, {+0.0f, +1.0f}},
-    {{+0.5f, -0.5f, +0.5f, +1.0f}, {+1.0f, +1.0f}},
-};
-UINT Indices_Quad[] =
-{
-    0, 2, 1,
-    1, 2, 3
-};
+    // Start the Dear ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow(); // Show demo window! :)
 
-int InitGraphics()
+    UINT Offset = 0;
+    m4f IdMat = IdentityM4F();
+    WVPData WVP_Trans = { IdMat, IdMat, IdMat };
+    constexpr int WVPBufferSlot = 0;
+    DX_ImmediateContext->UpdateSubresource(DX_WVPBuffer, 0, nullptr, &WVP_Trans, sizeof(WVPData), 0);
+
+    // Triangle
+    {
+        const UINT Stride = sizeof(VertexColor);
+        DX_ImmediateContext->IASetInputLayout(DX_ColorInputLayout);
+        DX_ImmediateContext->IASetVertexBuffers(0, 1, &DX_TriangleVxBuffer, &Stride, &Offset);
+        DX_ImmediateContext->IASetIndexBuffer(DX_TriangleIxBuffer, DXGI_FORMAT_R32_UINT, 0);
+        DX_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        DX_ImmediateContext->VSSetShader(DX_ColorVxShader, nullptr, 0);
+        DX_ImmediateContext->PSSetShader(DX_ColorPxShader, nullptr, 0);
+
+        DX_ImmediateContext->VSSetConstantBuffers(WVPBufferSlot, 1, &DX_WVPBuffer);
+
+        DX_ImmediateContext->DrawIndexed(NumTriIx, 0u, 0u);
+    }
+
+    // Quad
+    {
+        const UINT Stride = sizeof(VertexTexture);
+        DX_ImmediateContext->IASetInputLayout(DX_TextureInputLayout);
+        DX_ImmediateContext->IASetVertexBuffers(0, 1, &DX_QuadVxBuffer, &Stride, &Offset);
+        DX_ImmediateContext->IASetIndexBuffer(DX_QuadIxBuffer, DXGI_FORMAT_R32_UINT, 0);
+        DX_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        DX_ImmediateContext->VSSetShader(DX_TextureVxShader, nullptr, 0);
+        DX_ImmediateContext->PSSetShader(DX_TexturePxShader, nullptr, 0);
+
+        DX_ImmediateContext->PSSetShaderResources(0, 1, &DebugTexture_SRV);
+        DX_ImmediateContext->PSSetSamplers(0, 1, &DebugSamplerState);
+
+        DX_ImmediateContext->VSSetConstantBuffers(WVPBufferSlot, 1, &DX_WVPBuffer);
+
+        DX_ImmediateContext->DrawIndexed(NumQuadIx, 0u, 0u);
+    }
+
+    { // IMGUI: Frame End
+        ImGui::Render();
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    }
+
+    DX_SwapChain->Present(0, 0);
+}
+
+
+int Graphics_DX11::Init()
 {
     HRESULT Result = S_OK;
 
@@ -242,6 +285,18 @@ int InitGraphics()
 
     // Triangle Vx/Ix
     {
+        VertexColor Vertices_Triangle[] =
+        {
+            {{0.0f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+            {{0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+            {{-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}}
+        };
+        UINT Indices_Triangle[] =
+        {
+            0, 2, 1
+        };
+        NumTriIx = ARRAYSIZE(Indices_Triangle);
+
         D3D11_BUFFER_DESC VertexBufferDesc = { sizeof(Vertices_Triangle), D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, 0, 0 };
         D3D11_SUBRESOURCE_DATA VertexBufferInitData = { Vertices_Triangle, 0, 0 };
         Result = DX_Device->CreateBuffer(&VertexBufferDesc, &VertexBufferInitData, &DX_TriangleVxBuffer);
@@ -301,6 +356,20 @@ int InitGraphics()
 
     // Quad Vx/Ix
     {
+        VertexTexture Vertices_Quad[] =
+        {
+            {{-0.5f, +0.5f, +0.5f, +1.0f}, {+0.0f, +0.0f}},
+            {{+0.5f, +0.5f, +0.5f, +1.0f}, {+1.0f, +0.0f}},
+            {{-0.5f, -0.5f, +0.5f, +1.0f}, {+0.0f, +1.0f}},
+            {{+0.5f, -0.5f, +0.5f, +1.0f}, {+1.0f, +1.0f}},
+        };
+        UINT Indices_Quad[] =
+        {
+            0, 2, 1,
+            1, 2, 3
+        };
+        NumQuadIx = ARRAYSIZE(Indices_Quad);
+
         D3D11_BUFFER_DESC QuadVxBufferDesc = { sizeof(Vertices_Quad), D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, 0, 0 };
         D3D11_SUBRESOURCE_DATA QuadVxBufferInitData = { Vertices_Quad, 0, 0 };
         Result = DX_Device->CreateBuffer(&QuadVxBufferDesc, &QuadVxBufferInitData, &DX_QuadVxBuffer);
@@ -403,85 +472,10 @@ int InitGraphics()
     return Result;
 }
 
-void TermGraphics()
+void Graphics_DX11::Term()
 {
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
-}
-
-void UpdateAndDraw()
-{
-    // (Your code process and dispatch Win32 messages)
-    // Start the Dear ImGui frame
-    ImGui_ImplDX11_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-    ImGui::ShowDemoWindow(); // Show demo window! :)
-
-    UINT Offset = 0;
-    m4f IdentityMatrix =
-    {
-        { 1.0f, 0.0f, 0.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f, 0.0f },
-        { 0.0f, 0.0f, 1.0f, 0.0f },
-        { 0.0f, 0.0f, 0.0f, 1.0f },
-    };
-    WVPData WVP_Trans = { IdentityMatrix, IdentityMatrix, IdentityMatrix };
-    constexpr int WVPBufferSlot = 0;
-    DX_ImmediateContext->UpdateSubresource(DX_WVPBuffer, 0, nullptr, &WVP_Trans, sizeof(WVPData), 0);
-
-    // Triangle
-    {
-        const UINT Stride = sizeof(VertexColor);
-        DX_ImmediateContext->IASetInputLayout(DX_ColorInputLayout);
-        DX_ImmediateContext->IASetVertexBuffers(0, 1, &DX_TriangleVxBuffer, &Stride, &Offset);
-        DX_ImmediateContext->IASetIndexBuffer(DX_TriangleIxBuffer, DXGI_FORMAT_R32_UINT, 0);
-        DX_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        DX_ImmediateContext->VSSetShader(DX_ColorVxShader, nullptr, 0);
-        DX_ImmediateContext->PSSetShader(DX_ColorPxShader, nullptr, 0);
-
-        DX_ImmediateContext->VSSetConstantBuffers(WVPBufferSlot, 1, &DX_WVPBuffer);
-
-        DX_ImmediateContext->DrawIndexed(ARRAYSIZE(Indices_Triangle), 0u, 0u);
-    }
-
-    // Quad
-    {
-        const UINT Stride = sizeof(VertexTexture);
-        DX_ImmediateContext->IASetInputLayout(DX_TextureInputLayout);
-        DX_ImmediateContext->IASetVertexBuffers(0, 1, &DX_QuadVxBuffer, &Stride, &Offset);
-        DX_ImmediateContext->IASetIndexBuffer(DX_QuadIxBuffer, DXGI_FORMAT_R32_UINT, 0);
-        DX_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        DX_ImmediateContext->VSSetShader(DX_TextureVxShader, nullptr, 0);
-        DX_ImmediateContext->PSSetShader(DX_TexturePxShader, nullptr, 0);
-
-        DX_ImmediateContext->PSSetShaderResources(0, 1, &DebugTexture_SRV);
-        DX_ImmediateContext->PSSetSamplers(0, 1, &DebugSamplerState);
-
-        DX_ImmediateContext->VSSetConstantBuffers(WVPBufferSlot, 1, &DX_WVPBuffer);
-
-        DX_ImmediateContext->DrawIndexed(ARRAYSIZE(Indices_Quad), 0u, 0u);
-    }
-
-    // Rendering
-    // (Your code clears your framebuffer, renders your other stuff etc.)
-    ImGui::Render();
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-    // (Your code calls swapchain's Present() function)
-}
-
-void Draw()
-{
-    float ClearColor[4] = { 0.125f, 0.175f, 0.3f, 1.0f };
-    float fDepth = 1.0f;
-    DX_ImmediateContext->ClearRenderTargetView(DX_RenderTargetView, ClearColor);
-    DX_ImmediateContext->ClearDepthStencilView(DX_DepthStencilView, D3D11_CLEAR_DEPTH, fDepth, 0);
-
-    UpdateAndDraw();
-
-    DX_SwapChain->Present(0, 0);
 }
 

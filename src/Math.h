@@ -6,12 +6,14 @@ struct v2f
     float X = 0.0f;
     float Y = 0.0f;
 };
+
 struct v3f
 {
     float X = 0.0f;
     float Y = 0.0f;
     float Z = 0.0f;
 };
+
 struct v4f
 {
     float X = 0.0f;
@@ -30,12 +32,14 @@ struct m2f
     v2f r0;
     v2f r1;
 };
+
 struct m3f
 {
     v3f r0;
     v3f r1;
     v3f r2;
 };
+
 struct m4f
 {
     v4f r0;
@@ -43,6 +47,10 @@ struct m4f
     v4f r2;
     v4f r3;
 };
+
+m2f IdentityM2F();
+m3f IdentityM3F();
+m4f IdentityM4F();
 
 m2f Mult(m2f Left, m2f Right);
 m3f Mult(m3f Left, m3f Right);

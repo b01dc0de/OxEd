@@ -23,9 +23,13 @@ struct WVPData
 };
 
 int CompileShaderHelper(LPCWSTR SourceFileName, LPCSTR EntryPointFunction, LPCSTR Profile, ID3DBlob** ShaderBlob, const D3D_SHADER_MACRO* Defines = nullptr);
-int InitGraphics();
-void TermGraphics();
-void UpdateAndDraw();
-void Draw();
+
+struct Graphics_DX11
+{
+    static int Init();
+    static void Term();
+    static void UpdateAndDraw();
+};
 
 #endif // GRAPHICS_DX11_H
+

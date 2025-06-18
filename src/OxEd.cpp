@@ -60,10 +60,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_KEYUP:
 		{
-			if (VK_ESCAPE == wParam)
-			{
-				bRunning = false;
-			}
+			if (VK_ESCAPE == wParam) { bRunning = false; }
 		} break;
 		case WM_CLOSE:
 		{
@@ -91,79 +88,29 @@ int WindowMsgLoop(HWND InWindow)
 	return MsgCount;
 }
 
-int WINAPI WinMain_EmptyWindow(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
 {
 	(void)hPrevInst;
 	(void)CmdLine;
+	(void)WndShow;
 	if (HWND hWnd = InitWindow(hInst, WinResX, WinResY))
 	{
 		hWindow = hWnd;
 
-		ShowWindow(hWindow, WndShow);
-
-		bRunning = true;
-		while (bRunning)
-		{
-			WindowMsgLoop(hWindow);
-		}
-	}
-	return 0;
-}
-int WINAPI WinMain_DX11_Demo(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
-{
-	(void)hPrevInst;
-	(void)CmdLine;
-	if (HWND hWnd = InitWindow(hInst, WinResX, WinResY))
-	{
-		hWindow = hWnd;
-
-		HRESULT Result = InitGraphics();
-		if (Result != S_OK)
-		{
-			DebugBreak();
-		}
-
-		ShowWindow(hWindow, WndShow);
+		if (Graphics_DX11::Init() != S_OK) { DebugBreak(); }
+		ShowWindow(hWindow, SW_SHOWNORMAL);
 
 		bRunning = true;
 		while (bRunning)
 		{
 			WindowMsgLoop(hWindow);
 			UpdateWindow(hWindow);
-			Draw();
+			Graphics_DX11::UpdateAndDraw();
 		}
 
-		TermGraphics();
+		Graphics_DX11::Term();
 	}
 
 	return 0;
-}
-
-int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
-{
-	int Result = 0;
-
-	static const int Project_Win32_EmptyWindow= 0;
-	static const int Project_Win32_DX11_Demo = 1;
-
-	static int BuildProject = Project_Win32_DX11_Demo;
-	switch (BuildProject)
-	{
-		case Project_Win32_EmptyWindow:
-		{
-			Result = WinMain_EmptyWindow(hInst, hPrevInst, CmdLine, WndShow);
-		} break;
-		case Project_Win32_DX11_Demo:
-		{
-			Result = WinMain_DX11_Demo(hInst, hPrevInst, CmdLine, WndShow);
-		} break;
-		default:
-		{
-			Result = 1;
-			DebugBreak();
-		} break;
-	}
-
-	return Result;
 }
 
