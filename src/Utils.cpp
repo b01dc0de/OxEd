@@ -32,10 +32,8 @@ void ReadFileContents(const char* Name, FileContentsT& _FileContents)
 
 void Release(FileContentsT& _FileContents)
 {
-    if (_FileContents.Contents)
-    {
-        delete[] _FileContents.Contents;
-        _FileContents = {};
-    }
+    if (_FileContents.Name) { delete[] _FileContents.Name; }
+    if (_FileContents.Contents) { delete[] _FileContents.Contents; }
+    _FileContents = {};
 }
 

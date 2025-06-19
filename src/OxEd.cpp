@@ -17,6 +17,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 HWND InitWindow(HINSTANCE hInstance, int Width, int Height)
 {
+#if _DEBUG
+	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+#endif // _DEBUG
+
 	WNDCLASSEX WndClass = {};
 	WndClass.cbSize = sizeof(WNDCLASSEX);
 	WndClass.style = CS_GLOBALCLASS | CS_HREDRAW | CS_VREDRAW;

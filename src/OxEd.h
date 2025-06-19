@@ -2,11 +2,16 @@
 #define OXED_H
 
 // C++ Std Lib
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 // Win32
 //#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#if _DEBUG
+    #define _CRTDBG_MAP_ALLOC
+    #include <crtdbg.h>
+#endif // _DEBUG
 // DX11
 #include <d3d11.h>
 #include <d3dcompiler.h>

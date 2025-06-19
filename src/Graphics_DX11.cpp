@@ -19,7 +19,6 @@ namespace Graphics_DX11_State
     ID3D11RasterizerState* DX_RasterizerState = nullptr;
     ID3D11Texture2D* DX_DepthStencil = nullptr;
     ID3D11DepthStencilView* DX_DepthStencilView = nullptr;
-    ID3D11BlendState* DX_BlendState = nullptr;
 }
 using namespace Graphics_DX11_State;
 
@@ -90,7 +89,7 @@ char Hack_GetHex(u8 Value)
         }
         else
         {
-            return Value + 0x41;
+            return (Value - 10) + 0x41;
         }
     }
 }
@@ -173,8 +172,9 @@ void OxEd_ImGui_Draw()
 
 void Graphics_DX11::UpdateAndDraw()
 {
-    float ClearColor[] = RGB_TO_FLOAT4(30, 30, 46);
-    float fDepth = 1.0f;
+    DX_ImmediateContext->OMSetRenderTargets(1, &DX_RenderTargetView, DX_DepthStencilView);
+    constexpr float ClearColor[] = RGB_TO_FLOAT4(30, 30, 46);
+    constexpr float fDepth = 1.0f;
     DX_ImmediateContext->ClearRenderTargetView(DX_RenderTargetView, ClearColor);
     DX_ImmediateContext->ClearDepthStencilView(DX_DepthStencilView, D3D11_CLEAR_DEPTH, fDepth, 0);
 
@@ -216,8 +216,8 @@ int Graphics_DX11::Init()
     CreateDXGIFactory1(__uuidof(IDXGIFactory), (void**)&DX_Factory);
 
     DXGI_SAMPLE_DESC SharedSampleDesc = {};
-    SharedSampleDesc.Count = 4;
-    SharedSampleDesc.Quality = (UINT)D3D11_STANDARD_MULTISAMPLE_PATTERN;
+    SharedSampleDesc.Count = 1;
+    SharedSampleDesc.Quality = 0;
 
     UINT FrameRefreshRate = 60;
     DXGI_SWAP_CHAIN_DESC swapchain_desc = {};
@@ -231,6 +231,7 @@ int Graphics_DX11::Init()
     swapchain_desc.OutputWindow = hWindow;
     swapchain_desc.SampleDesc = SharedSampleDesc;
     swapchain_desc.Windowed = true;
+    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
     UINT CreateDeviceFlags = 0;
 #ifdef _DEBUG
@@ -298,22 +299,6 @@ int Graphics_DX11::Init()
 
     DX_ImmediateContext->OMSetRenderTargets(1, &DX_RenderTargetView, DX_DepthStencilView);
 
-    D3D11_RENDER_TARGET_BLEND_DESC RTVBlendDesc = {};
-    RTVBlendDesc.BlendEnable = true;
-    RTVBlendDesc.SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    RTVBlendDesc.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    RTVBlendDesc.BlendOp = D3D11_BLEND_OP_ADD;
-    RTVBlendDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
-    RTVBlendDesc.DestBlendAlpha = D3D11_BLEND_ZERO;
-    RTVBlendDesc.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    RTVBlendDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALPHA;
-
-    D3D11_BLEND_DESC BlendDesc = {};
-    BlendDesc.RenderTarget[0] = RTVBlendDesc;
-
-    Result = DX_Device->CreateBlendState(&BlendDesc, &DX_BlendState);
-    DXCHECK(Result);
-
     D3D11_VIEWPORT Viewport_Desc = {};
     Viewport_Desc.Width = (FLOAT)WinResX;
     Viewport_Desc.Height = (FLOAT)WinResY;
@@ -323,9 +308,7 @@ int Graphics_DX11::Init()
     Viewport_Desc.TopLeftY = 0;
     DX_ImmediateContext->RSSetViewports(1, &Viewport_Desc);
 
-    { // Imgui: Init
-
-        // Setup Dear ImGui context
+    { // Dear Imgui: Init
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
@@ -342,10 +325,26 @@ int Graphics_DX11::Init()
 
 void Graphics_DX11::Term()
 {
-    { // ImGui: Shutdown
+    Release(ActiveFile);
+
+    { // Dear ImGui: Shutdown
         ImGui_ImplDX11_Shutdown();
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext();
     }
+
+#define SAFE_RELEASE(Ptr) if (Ptr) {Ptr->Release();}
+
+    SAFE_RELEASE(DX_BackBuffer);
+    SAFE_RELEASE(DX_RenderTargetView);
+    SAFE_RELEASE(DX_RasterizerState);
+    SAFE_RELEASE(DX_DepthStencil);
+    SAFE_RELEASE(DX_DepthStencilView);
+
+
+    SAFE_RELEASE(DX_Factory);
+    SAFE_RELEASE(DX_SwapChain);
+    SAFE_RELEASE(DX_ImmediateContext);
+    SAFE_RELEASE(DX_Device);
 }
 
