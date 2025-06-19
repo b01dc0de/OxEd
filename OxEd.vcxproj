@@ -138,6 +138,7 @@
     <ClCompile Include="src\Graphics_DX11.cpp" />
     <ClCompile Include="src\OxEd.cpp" />
     <ClCompile Include="src\Math.cpp" />
+    <ClCompile Include="src\OxEd_win32.cpp" />
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -148,6 +149,7 @@
     <ClInclude Include="src\Graphics_DX11.h" />
     <ClInclude Include="src\OxEd.h" />
     <ClInclude Include="src\Math.h" />
+    <ClInclude Include="src\OxEd_win32.h" />
     <ClInclude Include="src\Utils.h" />
   </ItemGroup>
   <ItemGroup>

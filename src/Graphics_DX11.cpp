@@ -66,7 +66,6 @@ void HexFile::SetFile(FileContentsT& NewFile)
         HexText[WriteIdx++] = '\0';
         ASSERT(WriteIdx == HexTextSize);
     }
-
 }
 
 namespace OxEd_State
@@ -74,6 +73,11 @@ namespace OxEd_State
     HexFile ActiveFile;
 }
 using namespace OxEd_State;
+
+struct OxEd_DrawParams
+{
+    bool bLineNumbers = false;
+} DrawParams;
 
 void OxEd_Win32OpenFileDialog()
 {
@@ -119,6 +123,11 @@ void OxEd_ImGui_DrawMenuBar()
             {
                 OxEd_Win32OpenFileDialog();
             }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Options"))
+        {
+            ImGui::Checkbox("Line Numbers", &DrawParams.bLineNumbers);
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
