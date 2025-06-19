@@ -22,8 +22,6 @@ struct WVPData
     m4f Proj;
 };
 
-int CompileShaderHelper(LPCWSTR SourceFileName, LPCSTR EntryPointFunction, LPCSTR Profile, ID3DBlob** ShaderBlob, const D3D_SHADER_MACRO* Defines = nullptr);
-
 struct Graphics_DX11
 {
     static int Init();

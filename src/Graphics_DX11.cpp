@@ -19,136 +19,33 @@ ID3D11Texture2D* DX_DepthStencil = nullptr;
 ID3D11DepthStencilView* DX_DepthStencilView = nullptr;
 ID3D11BlendState* DX_BlendState = nullptr;
 
-ID3D11Buffer* DX_TriangleVxBuffer = nullptr;
-ID3D11Buffer* DX_TriangleIxBuffer = nullptr;
-UINT NumTriIx = 0;
+#define RGB_TO_FLOAT4(R, G, B) { float(R) / 255.0f, float(G) / 255.0f, float(B) / 255.0f, 1.0f }
 
-ID3D11Buffer* DX_QuadVxBuffer = nullptr;
-ID3D11Buffer* DX_QuadIxBuffer = nullptr;
-UINT NumQuadIx = 0;
-
-ID3D11VertexShader* DX_ColorVxShader = nullptr;
-ID3D11PixelShader* DX_ColorPxShader = nullptr;
-ID3D11InputLayout* DX_ColorInputLayout = nullptr;
-
-ID3D11VertexShader* DX_TextureVxShader = nullptr;
-ID3D11PixelShader* DX_TexturePxShader = nullptr;
-ID3D11InputLayout* DX_TextureInputLayout = nullptr;
-ID3D11Texture2D* DebugTexture = nullptr;
-ID3D11ShaderResourceView* DebugTexture_SRV = nullptr;
-ID3D11SamplerState* DebugSamplerState = nullptr;
-
-ID3D11Buffer* DX_WVPBuffer = nullptr;
-
-
-int CompileShaderHelper
-(
-    LPCWSTR SourceFileName,
-    LPCSTR EntryPointFunction,
-    LPCSTR Profile,
-    ID3DBlob * *ShaderBlob,
-    const D3D_SHADER_MACRO * Defines
-)
+void OxEd_ImGui_Draw()
 {
-    HRESULT Result = S_OK;
-
-    if (SourceFileName == nullptr || EntryPointFunction == nullptr || Profile == nullptr || ShaderBlob == nullptr)
-    {
-        return E_INVALIDARG;
-    }
-
-    *ShaderBlob = nullptr;
-
-    UINT CompileFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#if _DEBUG
-    CompileFlags |= D3DCOMPILE_DEBUG;
-    CompileFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-
-    ID3DBlob* OutBlob = nullptr;
-    ID3DBlob* ErrorMsgBlob = nullptr;
-
-    Result = D3DCompileFromFile
-    (
-        SourceFileName,
-        Defines,
-        D3D_COMPILE_STANDARD_FILE_INCLUDE,
-        EntryPointFunction,
-        Profile,
-        CompileFlags,
-        0, //UINT Flags2
-        &OutBlob,
-        &ErrorMsgBlob
-    );
-
-    if (FAILED(Result) && OutBlob)
-    {
-        OutBlob->Release();
-        OutBlob = nullptr;
-    }
-    if (ErrorMsgBlob)
-    {
-        OutputDebugStringA((char*)ErrorMsgBlob->GetBufferPointer());
-        ErrorMsgBlob->Release();
-    }
-
-    *ShaderBlob = OutBlob;
-
-    return Result;
-};
+}
 
 void Graphics_DX11::UpdateAndDraw()
 {
-    float ClearColor[4] = { 0.125f, 0.175f, 0.3f, 1.0f };
+    float ClearColor[] = RGB_TO_FLOAT4(30, 30, 46);
     float fDepth = 1.0f;
     DX_ImmediateContext->ClearRenderTargetView(DX_RenderTargetView, ClearColor);
     DX_ImmediateContext->ClearDepthStencilView(DX_DepthStencilView, D3D11_CLEAR_DEPTH, fDepth, 0);
 
-    // Start the Dear ImGui frame
-    ImGui_ImplDX11_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-    ImGui::ShowDemoWindow(); // Show demo window! :)
-
-    UINT Offset = 0;
-    m4f IdMat = IdentityM4F();
-    WVPData WVP_Trans = { IdMat, IdMat, IdMat };
-    constexpr int WVPBufferSlot = 0;
-    DX_ImmediateContext->UpdateSubresource(DX_WVPBuffer, 0, nullptr, &WVP_Trans, sizeof(WVPData), 0);
-
-    // Triangle
-    {
-        const UINT Stride = sizeof(VertexColor);
-        DX_ImmediateContext->IASetInputLayout(DX_ColorInputLayout);
-        DX_ImmediateContext->IASetVertexBuffers(0, 1, &DX_TriangleVxBuffer, &Stride, &Offset);
-        DX_ImmediateContext->IASetIndexBuffer(DX_TriangleIxBuffer, DXGI_FORMAT_R32_UINT, 0);
-        DX_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        DX_ImmediateContext->VSSetShader(DX_ColorVxShader, nullptr, 0);
-        DX_ImmediateContext->PSSetShader(DX_ColorPxShader, nullptr, 0);
-
-        DX_ImmediateContext->VSSetConstantBuffers(WVPBufferSlot, 1, &DX_WVPBuffer);
-
-        DX_ImmediateContext->DrawIndexed(NumTriIx, 0u, 0u);
+    { // ImGui: Frame begin
+        ImGui_ImplDX11_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
     }
 
-    // Quad
+    static bool bImGuiShowDemoWindow = true;
+    if (bImGuiShowDemoWindow)
     {
-        const UINT Stride = sizeof(VertexTexture);
-        DX_ImmediateContext->IASetInputLayout(DX_TextureInputLayout);
-        DX_ImmediateContext->IASetVertexBuffers(0, 1, &DX_QuadVxBuffer, &Stride, &Offset);
-        DX_ImmediateContext->IASetIndexBuffer(DX_QuadIxBuffer, DXGI_FORMAT_R32_UINT, 0);
-        DX_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        DX_ImmediateContext->VSSetShader(DX_TextureVxShader, nullptr, 0);
-        DX_ImmediateContext->PSSetShader(DX_TexturePxShader, nullptr, 0);
-
-        DX_ImmediateContext->PSSetShaderResources(0, 1, &DebugTexture_SRV);
-        DX_ImmediateContext->PSSetSamplers(0, 1, &DebugSamplerState);
-
-        DX_ImmediateContext->VSSetConstantBuffers(WVPBufferSlot, 1, &DX_WVPBuffer);
-
-        DX_ImmediateContext->DrawIndexed(NumQuadIx, 0u, 0u);
+        ImGui::ShowDemoWindow();
+    }
+    else
+    {
+        OxEd_ImGui_Draw();
     }
 
     { // IMGUI: Frame End
@@ -283,199 +180,28 @@ int Graphics_DX11::Init()
     Viewport_Desc.TopLeftY = 0;
     DX_ImmediateContext->RSSetViewports(1, &Viewport_Desc);
 
-    // Triangle Vx/Ix
-    {
-        VertexColor Vertices_Triangle[] =
-        {
-            {{0.0f, 0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
-            {{0.5f, -0.5f, 0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-            {{-0.5f, -0.5f, 0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}}
-        };
-        UINT Indices_Triangle[] =
-        {
-            0, 2, 1
-        };
-        NumTriIx = ARRAYSIZE(Indices_Triangle);
+    { // Imgui: Init
 
-        D3D11_BUFFER_DESC VertexBufferDesc = { sizeof(Vertices_Triangle), D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, 0, 0 };
-        D3D11_SUBRESOURCE_DATA VertexBufferInitData = { Vertices_Triangle, 0, 0 };
-        Result = DX_Device->CreateBuffer(&VertexBufferDesc, &VertexBufferInitData, &DX_TriangleVxBuffer);
-        DXCHECK(Result);
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
-        D3D11_BUFFER_DESC IndexBufferDesc = { sizeof(Indices_Triangle), D3D11_USAGE_DEFAULT, D3D11_BIND_INDEX_BUFFER, 0, 0 };
-        D3D11_SUBRESOURCE_DATA IndexBufferInitData = { Indices_Triangle, 0, 0 };
-        Result = DX_Device->CreateBuffer(&IndexBufferDesc, &IndexBufferInitData, &DX_TriangleIxBuffer);
-        DXCHECK(Result);
+        ImGui_ImplWin32_Init(hWindow);
+        ImGui_ImplDX11_Init(DX_Device, DX_ImmediateContext);
     }
-
-    // VertexColor shaders
-    {
-        ID3DBlob* VSCodeBlob = nullptr;
-        ID3DBlob* PSCodeBlob = nullptr;
-
-        const D3D_SHADER_MACRO VxColorDefines[] =
-        {
-            "ENABLE_VERTEX_COLOR", "1",
-            "ENABLE_VERTEX_TEXTURE", "0",
-            NULL, NULL
-        };
-        Result = CompileShaderHelper(L"src/hlsl/BaseShader.hlsl", "VSMain", "vs_5_0", &VSCodeBlob, VxColorDefines);
-        DXCHECKMSG(Result, "Failed to compile Vertex Shader! :(\n");
-
-        Result = CompileShaderHelper(L"src/hlsl/BaseShader.hlsl", "PSMain", "ps_5_0", &PSCodeBlob, VxColorDefines);
-        DXCHECKMSG(Result, "Failed to compile Pixel Shader! :(\n");
-
-        if (VSCodeBlob && PSCodeBlob)
-        {
-            Result = DX_Device->CreateVertexShader(VSCodeBlob->GetBufferPointer(), VSCodeBlob->GetBufferSize(), nullptr, &DX_ColorVxShader);
-            DXCHECKMSG(Result, "Device could not create vertex shader! :(\n");
-
-            Result = DX_Device->CreatePixelShader(PSCodeBlob->GetBufferPointer(), PSCodeBlob->GetBufferSize(), nullptr, &DX_ColorPxShader);
-            DXCHECKMSG(Result, "Device could not create pixel shader! :(\n");
-
-            D3D11_INPUT_ELEMENT_DESC InputLayoutDesc[] =
-            {
-                {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            };
-            UINT NumInputElements = ARRAYSIZE(InputLayoutDesc);
-
-            Result = DX_Device->CreateInputLayout(InputLayoutDesc, NumInputElements, VSCodeBlob->GetBufferPointer(), VSCodeBlob->GetBufferSize(), &DX_ColorInputLayout);
-            DXCHECKMSG(Result, "Device could not create input layout! :(\n");
-        }
-        if (VSCodeBlob) { VSCodeBlob->Release(); }
-        if (PSCodeBlob) { PSCodeBlob->Release(); }
-    }
-
-    D3D11_BUFFER_DESC WVPBufferDesc = {};
-    WVPBufferDesc.ByteWidth = sizeof(WVPData);
-    WVPBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    WVPBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    WVPBufferDesc.CPUAccessFlags = 0;
-    DXCHECK(DX_Device->CreateBuffer(&WVPBufferDesc, nullptr, &DX_WVPBuffer));
-
-    // Quad Vx/Ix
-    {
-        VertexTexture Vertices_Quad[] =
-        {
-            {{-0.5f, +0.5f, +0.5f, +1.0f}, {+0.0f, +0.0f}},
-            {{+0.5f, +0.5f, +0.5f, +1.0f}, {+1.0f, +0.0f}},
-            {{-0.5f, -0.5f, +0.5f, +1.0f}, {+0.0f, +1.0f}},
-            {{+0.5f, -0.5f, +0.5f, +1.0f}, {+1.0f, +1.0f}},
-        };
-        UINT Indices_Quad[] =
-        {
-            0, 2, 1,
-            1, 2, 3
-        };
-        NumQuadIx = ARRAYSIZE(Indices_Quad);
-
-        D3D11_BUFFER_DESC QuadVxBufferDesc = { sizeof(Vertices_Quad), D3D11_USAGE_DEFAULT, D3D11_BIND_VERTEX_BUFFER, 0, 0 };
-        D3D11_SUBRESOURCE_DATA QuadVxBufferInitData = { Vertices_Quad, 0, 0 };
-        Result = DX_Device->CreateBuffer(&QuadVxBufferDesc, &QuadVxBufferInitData, &DX_QuadVxBuffer);
-        DXCHECK(Result);
-
-        D3D11_BUFFER_DESC QuadIxBufferDesc = { sizeof(Indices_Quad), D3D11_USAGE_DEFAULT, D3D11_BIND_INDEX_BUFFER, 0, 0 };
-        D3D11_SUBRESOURCE_DATA IndexBufferInitData = { Indices_Quad, 0, 0 };
-        Result = DX_Device->CreateBuffer(&QuadIxBufferDesc, &IndexBufferInitData, &DX_QuadIxBuffer);
-        DXCHECK(Result);
-    }
-
-    // DebugTexture
-    {
-        Image32 BMPImage = {};
-        GetDebugBMP(BMPImage);
-
-        D3D11_SUBRESOURCE_DATA DebugTexDataDesc[] = { {} };
-        DebugTexDataDesc[0].pSysMem = BMPImage.PixelBuffer;
-        DebugTexDataDesc[0].SysMemPitch = sizeof(u32) * BMPImage.Width;
-        DebugTexDataDesc[0].SysMemSlicePitch = sizeof(u32) * BMPImage.Width * BMPImage.Height;
-        D3D11_TEXTURE2D_DESC DebugTextureDesc = {};
-        DebugTextureDesc.Width = BMPImage.Width;
-        DebugTextureDesc.Height = BMPImage.Height;
-        DebugTextureDesc.MipLevels = 1;
-        DebugTextureDesc.ArraySize = 1;
-        DebugTextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        DebugTextureDesc.SampleDesc.Count = 1;
-        DebugTextureDesc.SampleDesc.Quality = 0;
-        DebugTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-        DebugTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        DebugTextureDesc.CPUAccessFlags = 0;
-        DebugTextureDesc.MiscFlags = 0;
-        DXCHECK(DX_Device->CreateTexture2D(&DebugTextureDesc, &DebugTexDataDesc[0], &DebugTexture));
-        DXCHECK(DX_Device->CreateShaderResourceView(DebugTexture, nullptr, &DebugTexture_SRV));
-
-        D3D11_TEXTURE_ADDRESS_MODE AddressMode = D3D11_TEXTURE_ADDRESS_WRAP;
-        D3D11_SAMPLER_DESC DebugTextureSamplerDesc = {};
-        DebugTextureSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-        DebugTextureSamplerDesc.AddressU = AddressMode;
-        DebugTextureSamplerDesc.AddressV = AddressMode;
-        DebugTextureSamplerDesc.AddressW = AddressMode;
-        DebugTextureSamplerDesc.MipLODBias = 0.0f;
-        DebugTextureSamplerDesc.MaxAnisotropy = 0;
-        DebugTextureSamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-        DebugTextureSamplerDesc.MinLOD = 0;
-        DebugTextureSamplerDesc.MaxLOD = 0;
-        DXCHECK(DX_Device->CreateSamplerState(&DebugTextureSamplerDesc, &DebugSamplerState));
-
-        delete[] BMPImage.PixelBuffer;
-    }
-
-    // VertexTexture shaders
-    {
-        ID3DBlob* VSCodeBlob = nullptr;
-        ID3DBlob* PSCodeBlob = nullptr;
-
-        const D3D_SHADER_MACRO VxTextureDefines[] =
-        {
-            "ENABLE_VERTEX_COLOR", "0",
-            "ENABLE_VERTEX_TEXTURE", "1",
-            NULL, NULL
-        };
-        Result = CompileShaderHelper(L"src/hlsl/BaseShader.hlsl", "VSMain", "vs_5_0", &VSCodeBlob, VxTextureDefines);
-        DXCHECKMSG(Result, "Failed to compile Vertex Shader! :(\n");
-        Result = CompileShaderHelper(L"src/hlsl/BaseShader.hlsl", "PSMain", "ps_5_0", &PSCodeBlob, VxTextureDefines);
-        DXCHECKMSG(Result, "Failed to compile Pixel Shader! :(\n");
-
-        if (VSCodeBlob && PSCodeBlob)
-        {
-            Result = DX_Device->CreateVertexShader(VSCodeBlob->GetBufferPointer(), VSCodeBlob->GetBufferSize(), nullptr, &DX_TextureVxShader);
-            DXCHECKMSG(Result, "Device could not create vertex shader! :(\n");
-
-            Result = DX_Device->CreatePixelShader(PSCodeBlob->GetBufferPointer(), PSCodeBlob->GetBufferSize(), nullptr, &DX_TexturePxShader);
-            DXCHECKMSG(Result, "Device could not create pixel shader! :(\n");
-            D3D11_INPUT_ELEMENT_DESC InputLayoutDesc[] =
-            {
-                {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-                {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            };
-            UINT NumInputElements = ARRAYSIZE(InputLayoutDesc);
-
-            Result = DX_Device->CreateInputLayout(InputLayoutDesc, NumInputElements, VSCodeBlob->GetBufferPointer(), VSCodeBlob->GetBufferSize(), &DX_TextureInputLayout);
-            DXCHECKMSG(Result, "Device could not create input layout! :(\n");
-        }
-        if (VSCodeBlob) { VSCodeBlob->Release(); }
-        if (PSCodeBlob) { PSCodeBlob->Release(); }
-    }
-
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    // Setup Platform/Renderer backends
-    ImGui_ImplWin32_Init(hWindow);
-    ImGui_ImplDX11_Init(DX_Device, DX_ImmediateContext);
 
     return Result;
 }
 
 void Graphics_DX11::Term()
 {
-    ImGui_ImplDX11_Shutdown();
-    ImGui_ImplWin32_Shutdown();
-    ImGui::DestroyContext();
+    { // ImGui: Shutdown
+        ImGui_ImplDX11_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+    }
 }
 
