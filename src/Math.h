@@ -1,6 +1,15 @@
 #ifndef MATH_H
 #define MATH_H
 
+template <typename T>
+T Clamp(T V, T A, T B)
+{
+    ASSERT(A <= B);
+    if (V < A) { return A; }
+    else if (V > B) { return B; }
+    else { return V; }
+}
+
 struct v2f
 {
     float X = 0.0f;

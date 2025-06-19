@@ -32,7 +32,7 @@ HWND InitWindow(HINSTANCE hInstance, int Width, int Height)
 
 	RECT WndRect = { 0, 0, (LONG)Width, (LONG)Height};
 	UINT WndStyle = WS_CAPTION | WS_OVERLAPPEDWINDOW;
-	UINT WndExStyle = WS_EX_OVERLAPPEDWINDOW;
+	UINT WndExStyle = 0;
 	AdjustWindowRectEx(&WndRect, WndStyle, FALSE, WndExStyle);
 
 	HWND NewWindow = CreateWindowEx(

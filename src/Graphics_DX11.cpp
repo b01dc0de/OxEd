@@ -1,9 +1,6 @@
 #include "Graphics_DX11.h"
 #include "Utils.h"
 
-#define DXCHECK(Result) if (FAILED(Result)) { return -1; }
-#define DXCHECKMSG(Result, Msg) if (FAILED(Result)) { OutputDebugStringA((Msg)); return -1; }
-
 namespace Graphics_DX11_State
 {
     IDXGISwapChain* DX_SwapChain = nullptr;
@@ -24,9 +21,57 @@ using namespace Graphics_DX11_State;
 
 #define RGB_TO_FLOAT4(R, G, B) { float(R) / 255.0f, float(G) / 255.0f, float(B) / 255.0f, 1.0f }
 
+struct HexFile 
+{
+    const char* FileName = nullptr;
+
+    size_t FileSize = 0;
+    u8* FileContents = nullptr;
+
+    size_t HexTextSize = 0;
+    char* HexText = nullptr;
+
+    void Release();
+    void SetFile(FileContentsT& NewFile);
+};
+
+void HexFile::Release()
+{
+    if (FileName) { delete[] FileName; }
+    if (FileContents) { delete[] FileContents; }
+    if (HexText) { delete[] HexText; }
+
+    *this = {};
+}
+
+void HexFile::SetFile(FileContentsT& NewFile)
+{
+    Release();
+
+    FileName = NewFile.Name;
+    FileSize = NewFile.Size;
+    FileContents = NewFile.Contents;
+
+    // Create hex text representation of file
+    {
+        HexTextSize = (FileSize * 3) + 1;
+        HexText = new char[HexTextSize];
+        size_t WriteIdx = 0;
+        for (size_t ByteIdx = 0; ByteIdx < FileSize; ByteIdx++)
+        {
+            HexText[WriteIdx++] = GetHighHex(FileContents[ByteIdx]);
+            HexText[WriteIdx++] = GetLowHex(FileContents[ByteIdx]);
+            HexText[WriteIdx++] = ' ';
+        }
+        HexText[WriteIdx++] = '\0';
+        ASSERT(WriteIdx == HexTextSize);
+    }
+
+}
+
 namespace OxEd_State
 {
-    FileContentsT ActiveFile = {};
+    HexFile ActiveFile;
 }
 using namespace OxEd_State;
 
@@ -53,13 +98,14 @@ void OxEd_Win32OpenFileDialog()
     BOOL bResult = GetOpenFileNameA(&DialogState);
     if (bResult)
     { // User hit 'OK'
-        Release(ActiveFile);
-        ReadFileContents(FileNameBuffer, ActiveFile);
+        FileContentsT NewActiveFile = {};
+        ReadFileContents(FileNameBuffer, NewActiveFile);
+        ActiveFile.SetFile(NewActiveFile);
     }
     else
     { // User canceled dialog, or other error occured
-        DWORD ExError = CommDlgExtendedError();
-        DebugBreak();
+        //DWORD ExError = CommDlgExtendedError();
+        //DebugBreak();
     }
 }
 
@@ -69,7 +115,7 @@ void OxEd_ImGui_DrawMenuBar()
     {
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem("Open", "Ctrl+O"))
+            if (ImGui::MenuItem("Open"))
             {
                 OxEd_Win32OpenFileDialog();
             }
@@ -77,31 +123,6 @@ void OxEd_ImGui_DrawMenuBar()
         }
         ImGui::EndMainMenuBar();
     }
-}
-
-char Hack_GetHex(u8 Value)
-{
-    if (0 <= Value && Value <= 0xF)
-    {
-        if (Value <= 9)
-        {
-            return Value + 0x30;
-        }
-        else
-        {
-            return (Value - 10) + 0x41;
-        }
-    }
-}
-
-char Hack_GetHighHex(u8 Value)
-{
-    return Hack_GetHex((Value & 0xF0) >> 4);
-}
-
-char Hack_GetLowHex(u8 Value)
-{
-    return Hack_GetHex(Value & 0x0F);
 }
 
 void OxEd_ImGui_DrawActiveFile()
@@ -112,46 +133,25 @@ void OxEd_ImGui_DrawActiveFile()
     ImGui::SetNextWindowSize(viewport->WorkSize);
 
     constexpr int BytesPerLine = 32;
-    constexpr int NumLines = 8;
     constexpr int LineNumberWidth = 1;
     constexpr int LineWidth = (BytesPerLine * 3) + 1 + (LineNumberWidth + 1);
-    constexpr int HexBufferSize = LineWidth * NumLines + 1;
 
-    static int StartLine = 0;
+    constexpr static int StartLine = 0;
+    int NumLines = ActiveFile.FileSize / BytesPerLine + (ActiveFile.FileSize % BytesPerLine == 0 ?  0 : 1);
 
-    char TextHex[HexBufferSize] = {};
-    { // Fill hex buffer
-        if (ActiveFile.Contents)
-        {
-            int WriteIdx = 0;
-            for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
-            {
-                int DummyLineNumber = (LineIdx + StartLine) % 10;
-                TextHex[WriteIdx++] = DummyLineNumber + 0x30;
-                TextHex[WriteIdx++] = ' ';
-                for (int ByteIdx = 0; ByteIdx < BytesPerLine; ByteIdx++)
-                {
-                    int ByteIdxInFile = (LineIdx + StartLine) * BytesPerLine + ByteIdx;
-                    TextHex[WriteIdx++] = Hack_GetHighHex(ActiveFile.Contents[ByteIdxInFile]);
-                    TextHex[WriteIdx++] = Hack_GetLowHex(ActiveFile.Contents[ByteIdxInFile]);
-                    TextHex[WriteIdx++] = ' ';
-                }
-                TextHex[WriteIdx++] = '\n';
-            }
-            TextHex[WriteIdx++] = '\0';
-        }
-    }
+    ImVec4 ForegroundColor(198.0f/255.0f, 166.0f/255.0f, 247.0f/255.0f, 1.0f);
 
-    ImVec4 FG_Color(198.0f/255.0f, 166.0f/255.0f, 247.0f/255.0f, 1.0f);
     if (ImGui::Begin("OxEd_ImGui_DrawActiveFile", nullptr, flags))
     {
-        ImGui::Text("%s", ActiveFile.Name);
+        ImGui::Text("%s", ActiveFile.FileName);
         ImGui::BeginChild("ActiveFile_Contents");
-        ImGui::PushStyleColor(ImGuiCol_Text, FG_Color);
+        ImGui::PushStyleColor(ImGuiCol_Text, ForegroundColor);
         for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
         {
-            const char* LineBegin = TextHex + (LineWidth * LineIdx);
-            const char* LineEnd = TextHex + (LineWidth * LineIdx) + LineWidth;
+            size_t BeginIdx = LineWidth * LineIdx;
+            size_t EndIdx = Clamp((size_t)(BeginIdx + LineWidth - 1), (size_t)0, ActiveFile.HexTextSize - 1);
+            const char* LineBegin = ActiveFile.HexText + BeginIdx;
+            const char* LineEnd = ActiveFile.HexText + EndIdx;
             ImGui::TextUnformatted(LineBegin, LineEnd);
         }
         ImGui::PopStyleColor();
@@ -164,7 +164,7 @@ void OxEd_ImGui_DrawActiveFile()
 void OxEd_ImGui_Draw()
 {
     OxEd_ImGui_DrawMenuBar();
-    if (ActiveFile.Contents)
+    if (ActiveFile.FileContents)
     {
         OxEd_ImGui_DrawActiveFile();
     }
@@ -202,6 +202,9 @@ void Graphics_DX11::UpdateAndDraw()
 
 int Graphics_DX11::Init()
 {
+#define DXCHECK(Result) if (FAILED(Result)) { return -1; }
+#define DXCHECKMSG(Result, Msg) if (FAILED(Result)) { OutputDebugStringA((Msg)); return -1; }
+
     HRESULT Result = S_OK;
 
     D3D_FEATURE_LEVEL SupportedFeatureLevels[] =
@@ -239,14 +242,14 @@ int Graphics_DX11::Init()
 #endif
 
     Result = D3D11CreateDeviceAndSwapChain(
-        nullptr,					//IDXGIAdapter* pAdapter
-        D3D_DRIVER_TYPE_HARDWARE,	//D3D_DRIVER_TYPE DriverType
-        nullptr,					//HMODULE Software
-        CreateDeviceFlags,			//UINT Flags
-        SupportedFeatureLevels,		//const D3D_FEATURE_LEVEL* pFeatureLevels
-        NumSupportedFeatureLevels,	//UINT FeatureLevels
-        D3D11_SDK_VERSION,			//UINT SDKVersion
-        &swapchain_desc,			//const DXGI_SWAP_CHAIN_DESC* pSwapChainDesc
+        nullptr,
+        D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
+        CreateDeviceFlags,
+        SupportedFeatureLevels,	
+        NumSupportedFeatureLevels,
+        D3D11_SDK_VERSION,
+        &swapchain_desc,
         &DX_SwapChain,
         &DX_Device,
         &UsedFeatureLevel,
@@ -314,6 +317,7 @@ int Graphics_DX11::Init()
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+        io.IniFilename = nullptr;
         io.FontGlobalScale = 2.0f;
 
         ImGui_ImplWin32_Init(hWindow);
@@ -325,7 +329,7 @@ int Graphics_DX11::Init()
 
 void Graphics_DX11::Term()
 {
-    Release(ActiveFile);
+    ActiveFile.Release();
 
     { // Dear ImGui: Shutdown
         ImGui_ImplDX11_Shutdown();

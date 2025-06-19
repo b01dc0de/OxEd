@@ -37,3 +37,29 @@ void Release(FileContentsT& _FileContents)
     _FileContents = {};
 }
 
+char GetHex(u8 Value)
+{
+    if (0 <= Value && Value <= 0xF)
+    {
+        if (Value <= 9)
+        {
+            return Value + 0x30;
+        }
+        else
+        {
+            return (Value - 10) + 0x41;
+        }
+    }
+}
+
+char GetHighHex(u8 Value)
+{
+    return GetHex((Value & 0xF0) >> 4);
+}
+
+char GetLowHex(u8 Value)
+{
+    return GetHex(Value & 0x0F);
+}
+
+

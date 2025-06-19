@@ -1,23 +1,23 @@
 #ifndef OXED_H
 #define OXED_H
 
-// C++ Std Lib
+// C++ standard libary:
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-// Win32
+// Win32:
 //#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #if _DEBUG
     #define _CRTDBG_MAP_ALLOC
     #include <crtdbg.h>
 #endif // _DEBUG
-// DX11
+// DX11:
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <dxgi.h>
 
-// ImGui
+// Dear ImGui:
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_win32.h"
 #include "imgui/backends/imgui_impl_dx11.h"
@@ -39,6 +39,8 @@ extern bool bRunning;
 extern HWND hWindow;
 extern UINT WinResX;
 extern UINT WinResY;
+
+#define ASSERT(Exp) if (!(Exp)) { DebugBreak(); }
 
 // Project headers
 #include "Math.h"
