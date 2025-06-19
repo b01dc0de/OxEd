@@ -3,25 +3,6 @@
 
 #include "OxEd.h"
 
-struct VertexColor
-{
-    v4f Position;
-    v4f Color;
-};
-
-struct VertexTexture
-{
-    v4f Position;
-    v2f TexUV;
-};
-
-struct WVPData
-{
-    m4f World;
-    m4f View;
-    m4f Proj;
-};
-
 struct Graphics_DX11
 {
     static int Init();

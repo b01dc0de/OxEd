@@ -4,25 +4,171 @@
 #define DXCHECK(Result) if (FAILED(Result)) { return -1; }
 #define DXCHECKMSG(Result, Msg) if (FAILED(Result)) { OutputDebugStringA((Msg)); return -1; }
 
-IDXGISwapChain* DX_SwapChain = nullptr;
-ID3D11Device* DX_Device = nullptr;
-D3D_FEATURE_LEVEL UsedFeatureLevel;
-ID3D11DeviceContext* DX_ImmediateContext = nullptr;
+namespace Graphics_DX11_State
+{
+    IDXGISwapChain* DX_SwapChain = nullptr;
+    ID3D11Device* DX_Device = nullptr;
+    D3D_FEATURE_LEVEL UsedFeatureLevel;
+    ID3D11DeviceContext* DX_ImmediateContext = nullptr;
 
-ID3D11Texture2D* DX_BackBuffer = nullptr;
-ID3D11RenderTargetView* DX_RenderTargetView = nullptr;
+    ID3D11Texture2D* DX_BackBuffer = nullptr;
+    ID3D11RenderTargetView* DX_RenderTargetView = nullptr;
 
-IDXGIFactory1* DX_Factory = nullptr;
+    IDXGIFactory1* DX_Factory = nullptr;
 
-ID3D11RasterizerState* DX_RasterizerState = nullptr;
-ID3D11Texture2D* DX_DepthStencil = nullptr;
-ID3D11DepthStencilView* DX_DepthStencilView = nullptr;
-ID3D11BlendState* DX_BlendState = nullptr;
+    ID3D11RasterizerState* DX_RasterizerState = nullptr;
+    ID3D11Texture2D* DX_DepthStencil = nullptr;
+    ID3D11DepthStencilView* DX_DepthStencilView = nullptr;
+    ID3D11BlendState* DX_BlendState = nullptr;
+}
+using namespace Graphics_DX11_State;
 
 #define RGB_TO_FLOAT4(R, G, B) { float(R) / 255.0f, float(G) / 255.0f, float(B) / 255.0f, 1.0f }
 
+namespace OxEd_State
+{
+    FileContentsT ActiveFile = {};
+}
+using namespace OxEd_State;
+
+void OxEd_Win32OpenFileDialog()
+{
+    char* FileNameBuffer = new char[MAX_PATH]{};
+
+    OPENFILENAMEA DialogState = {};
+    DialogState.lStructSize = sizeof(OPENFILENAMEA);
+    DialogState.hwndOwner = hWindow;
+    DialogState.hInstance = nullptr;
+    DialogState.lpstrFilter = nullptr;
+    DialogState.lpstrCustomFilter = nullptr;
+    DialogState.nFilterIndex = 0;
+    DialogState.lpstrFile = FileNameBuffer;
+    DialogState.nMaxFile = MAX_PATH;
+    DialogState.lpstrFileTitle = nullptr;
+    DialogState.lpstrInitialDir = nullptr;
+    DialogState.lpstrTitle = nullptr;
+    DialogState.Flags = OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST;
+    DialogState.lpstrDefExt = nullptr;
+    DialogState.lCustData = 0;
+    DialogState.lpfnHook = nullptr;
+    BOOL bResult = GetOpenFileNameA(&DialogState);
+    if (bResult)
+    { // User hit 'OK'
+        Release(ActiveFile);
+        ReadFileContents(FileNameBuffer, ActiveFile);
+    }
+    else
+    { // User canceled dialog, or other error occured
+        DWORD ExError = CommDlgExtendedError();
+        DebugBreak();
+    }
+}
+
+void OxEd_ImGui_DrawMenuBar()
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Open", "Ctrl+O"))
+            {
+                OxEd_Win32OpenFileDialog();
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+}
+
+char Hack_GetHex(u8 Value)
+{
+    if (0 <= Value && Value <= 0xF)
+    {
+        if (Value <= 9)
+        {
+            return Value + 0x30;
+        }
+        else
+        {
+            return Value + 0x41;
+        }
+    }
+}
+
+char Hack_GetHighHex(u8 Value)
+{
+    return Hack_GetHex((Value & 0xF0) >> 4);
+}
+
+char Hack_GetLowHex(u8 Value)
+{
+    return Hack_GetHex(Value & 0x0F);
+}
+
+void OxEd_ImGui_DrawActiveFile()
+{
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+
+    constexpr int BytesPerLine = 32;
+    constexpr int NumLines = 8;
+    constexpr int LineNumberWidth = 1;
+    constexpr int LineWidth = (BytesPerLine * 3) + 1 + (LineNumberWidth + 1);
+    constexpr int HexBufferSize = LineWidth * NumLines + 1;
+
+    static int StartLine = 0;
+
+    char TextHex[HexBufferSize] = {};
+    { // Fill hex buffer
+        if (ActiveFile.Contents)
+        {
+            int WriteIdx = 0;
+            for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
+            {
+                int DummyLineNumber = (LineIdx + StartLine) % 10;
+                TextHex[WriteIdx++] = DummyLineNumber + 0x30;
+                TextHex[WriteIdx++] = ' ';
+                for (int ByteIdx = 0; ByteIdx < BytesPerLine; ByteIdx++)
+                {
+                    int ByteIdxInFile = (LineIdx + StartLine) * BytesPerLine + ByteIdx;
+                    TextHex[WriteIdx++] = Hack_GetHighHex(ActiveFile.Contents[ByteIdxInFile]);
+                    TextHex[WriteIdx++] = Hack_GetLowHex(ActiveFile.Contents[ByteIdxInFile]);
+                    TextHex[WriteIdx++] = ' ';
+                }
+                TextHex[WriteIdx++] = '\n';
+            }
+            TextHex[WriteIdx++] = '\0';
+        }
+    }
+
+    ImVec4 FG_Color(198.0f/255.0f, 166.0f/255.0f, 247.0f/255.0f, 1.0f);
+    if (ImGui::Begin("OxEd_ImGui_DrawActiveFile", nullptr, flags))
+    {
+        ImGui::Text("%s", ActiveFile.Name);
+        ImGui::BeginChild("ActiveFile_Contents");
+        ImGui::PushStyleColor(ImGuiCol_Text, FG_Color);
+        for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
+        {
+            const char* LineBegin = TextHex + (LineWidth * LineIdx);
+            const char* LineEnd = TextHex + (LineWidth * LineIdx) + LineWidth;
+            ImGui::TextUnformatted(LineBegin, LineEnd);
+        }
+        ImGui::PopStyleColor();
+
+        ImGui::EndChild();
+    }
+    ImGui::End();
+}
+
 void OxEd_ImGui_Draw()
 {
+    OxEd_ImGui_DrawMenuBar();
+    if (ActiveFile.Contents)
+    {
+        OxEd_ImGui_DrawActiveFile();
+    }
 }
 
 void Graphics_DX11::UpdateAndDraw()
@@ -38,14 +184,11 @@ void Graphics_DX11::UpdateAndDraw()
         ImGui::NewFrame();
     }
 
+    OxEd_ImGui_Draw();
     static bool bImGuiShowDemoWindow = true;
     if (bImGuiShowDemoWindow)
     {
         ImGui::ShowDemoWindow();
-    }
-    else
-    {
-        OxEd_ImGui_Draw();
     }
 
     { // IMGUI: Frame End
@@ -188,6 +331,7 @@ int Graphics_DX11::Init()
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+        io.FontGlobalScale = 2.0f;
 
         ImGui_ImplWin32_Init(hWindow);
         ImGui_ImplDX11_Init(DX_Device, DX_ImmediateContext);

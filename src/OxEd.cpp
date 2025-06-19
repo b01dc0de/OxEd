@@ -88,6 +88,13 @@ int WindowMsgLoop(HWND InWindow)
 	return MsgCount;
 }
 
+void OxEd_Tick()
+{
+    WindowMsgLoop(hWindow);
+    UpdateWindow(hWindow);
+    Graphics_DX11::UpdateAndDraw();
+}
+
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
 {
 	(void)hPrevInst;
@@ -103,9 +110,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndSh
 		bRunning = true;
 		while (bRunning)
 		{
-			WindowMsgLoop(hWindow);
-			UpdateWindow(hWindow);
-			Graphics_DX11::UpdateAndDraw();
+			OxEd_Tick();
 		}
 
 		Graphics_DX11::Term();

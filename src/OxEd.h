@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 // Win32
-#define WIN32_LEAN_AND_MEAN
+//#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 // DX11
 #include <d3d11.h>
