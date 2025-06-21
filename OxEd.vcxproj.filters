@@ -57,6 +57,9 @@
     <ClCompile Include="src\OxEd_gfx_dx11.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\OxEd_GUI.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\OxEd.h">
@@ -84,6 +87,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\OxEd_gfx_dx11.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OxEd_GUI.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
