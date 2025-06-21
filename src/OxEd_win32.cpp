@@ -1,6 +1,6 @@
 #include "OxEd.h"
 #include "OxEd_win32.h"
-#include "Graphics_DX11.h"
+#include "OxEd_gfx_dx11.h"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

@@ -135,7 +135,7 @@
     <ClCompile Include="libs\imgui\imgui_draw.cpp" />
     <ClCompile Include="libs\imgui\imgui_tables.cpp" />
     <ClCompile Include="libs\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="src\Graphics_DX11.cpp" />
+    <ClCompile Include="src\OxEd_gfx_dx11.cpp" />
     <ClCompile Include="src\OxEd.cpp" />
     <ClCompile Include="src\Math.cpp" />
     <ClCompile Include="src\OxEd_win32.cpp" />
@@ -146,7 +146,7 @@
     <ClInclude Include="libs\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="libs\imgui\imgui.h" />
     <ClInclude Include="libs\imgui\imgui_internal.h" />
-    <ClInclude Include="src\Graphics_DX11.h" />
+    <ClInclude Include="src\OxEd_gfx_dx11.h" />
     <ClInclude Include="src\OxEd.h" />
     <ClInclude Include="src\Math.h" />
     <ClInclude Include="src\OxEd_win32.h" />

@@ -1,4 +1,4 @@
-#include "Graphics_DX11.h"
+#include "OxEd_gfx_dx11.h"
 #include "Utils.h"
 
 namespace Graphics_DX11_State
@@ -327,7 +327,7 @@ int Graphics_DX11::Init()
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.IniFilename = nullptr;
-        io.FontGlobalScale = 2.0f;
+        io.FontGlobalScale = 1.0f;
 
         ImGui_ImplWin32_Init(hWindow);
         ImGui_ImplDX11_Init(DX_Device, DX_ImmediateContext);

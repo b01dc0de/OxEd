@@ -21,9 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Graphics_DX11.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\OxEd.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -57,11 +54,11 @@
     <ClCompile Include="src\OxEd_win32.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\OxEd_gfx_dx11.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Graphics_DX11.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\OxEd.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -84,6 +81,9 @@
       <Filter>libs\imgui\src</Filter>
     </ClInclude>
     <ClInclude Include="src\OxEd_win32.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OxEd_gfx_dx11.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

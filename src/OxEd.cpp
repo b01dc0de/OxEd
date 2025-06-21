@@ -1,5 +1,5 @@
 #include "OxEd.h"
-#include "Graphics_DX11.h"
+#include "OxEd_gfx_dx11.h"
 
 // Globals
 bool bRunning = false;
