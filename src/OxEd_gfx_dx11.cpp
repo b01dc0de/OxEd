@@ -148,7 +148,7 @@ void OxEd_ImGui_DrawActiveFile()
     constexpr static int StartLine = 0;
     int NumLines = ActiveFile.FileSize / BytesPerLine + (ActiveFile.FileSize % BytesPerLine == 0 ?  0 : 1);
 
-    ImVec4 ForegroundColor(198.0f/255.0f, 166.0f/255.0f, 247.0f/255.0f, 1.0f);
+    ImVec4 ForegroundColor = RGB_TO_FLOAT4(198, 166, 247);
 
     if (ImGui::Begin("OxEd_ImGui_DrawActiveFile", nullptr, flags))
     {
@@ -159,9 +159,22 @@ void OxEd_ImGui_DrawActiveFile()
         {
             size_t BeginIdx = LineWidth * LineIdx;
             size_t EndIdx = Clamp((size_t)(BeginIdx + LineWidth - 1), (size_t)0, ActiveFile.HexTextSize - 1);
-            const char* LineBegin = ActiveFile.HexText + BeginIdx;
-            const char* LineEnd = ActiveFile.HexText + EndIdx;
-            ImGui::TextUnformatted(LineBegin, LineEnd);
+            if (DrawParams.bLineNumbers)
+            {
+                char TextOutBuffer[LineWidth + 11] = {};
+                int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X ", LineIdx);
+                for (size_t Idx = BeginIdx; Idx <= EndIdx; Idx++)
+                {
+                    TextOutBuffer[WriteIdx++] = ActiveFile.HexText[Idx];
+                }
+                ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
+            }
+            else
+            {
+                const char* LineBegin = ActiveFile.HexText + BeginIdx;
+                const char* LineEnd = ActiveFile.HexText + EndIdx;
+                ImGui::TextUnformatted(LineBegin, LineEnd);
+            }
         }
         ImGui::PopStyleColor();
 
