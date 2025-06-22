@@ -49,7 +49,7 @@ void HexFile::SetFile(FileContentsT& NewFile)
 
 namespace OxEd_State
 {
-    HexFile ActiveFile;
+    Array<HexFile> OpenFiles;
 }
 using namespace OxEd_State;
 
@@ -81,9 +81,15 @@ void OxEd_Win32OpenFileDialog()
     BOOL bResult = GetOpenFileNameA(&DialogState);
     if (bResult)
     { // User hit 'OK'
-        FileContentsT NewActiveFile = {};
-        ReadFileContents(FileNameBuffer, NewActiveFile);
-        ActiveFile.SetFile(NewActiveFile);
+        FileContentsT NewFile = {};
+        ReadFileContents(FileNameBuffer, NewFile);
+
+        if (NewFile.Contents)
+        {
+            HexFile NewHexFile = {};
+            NewHexFile.SetFile(NewFile);
+            OpenFiles.Add(NewHexFile);
+        }
     }
     else
     { // User canceled dialog, or other error occured
@@ -113,45 +119,39 @@ void OxEd_ImGui_DrawMenuBar()
     }
 }
 
-void OxEd_ImGui_DrawActiveFile()
+void OxEd_ImGui_DrawFile(HexFile& File)
 {
-    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-
     constexpr int BytesPerLine = 32;
     constexpr int LineNumberWidth = 1;
     constexpr int LineWidth = (BytesPerLine * 3) + 1 + (LineNumberWidth + 1);
 
     constexpr static int StartLine = 0;
-    int NumLines = ActiveFile.FileSize / BytesPerLine + (ActiveFile.FileSize % BytesPerLine == 0 ?  0 : 1);
+    int NumLines = File.FileSize / BytesPerLine + (File.FileSize % BytesPerLine == 0 ?  0 : 1);
 
     ImVec4 ForegroundColor = RGB_TO_FLOAT4(198, 166, 247);
 
-    if (ImGui::Begin("OxEd_ImGui_DrawActiveFile", nullptr, flags))
     {
-        ImGui::Text("%s", ActiveFile.FileName);
+        //ImGui::Text("%s", File.FileName);
         ImGui::BeginChild("ActiveFile_Contents");
         ImGui::PushStyleColor(ImGuiCol_Text, ForegroundColor);
         for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
         {
             size_t BeginIdx = LineWidth * LineIdx;
-            size_t EndIdx = Clamp((size_t)(BeginIdx + LineWidth - 1), (size_t)0, ActiveFile.HexTextSize - 1);
+            size_t EndIdx = Clamp((size_t)(BeginIdx + LineWidth - 1), (size_t)0, File.HexTextSize - 1);
             if (DrawParams.bLineNumbers)
             {
                 char TextOutBuffer[LineWidth + 11] = {};
                 int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X ", LineIdx);
                 for (size_t Idx = BeginIdx; Idx <= EndIdx; Idx++)
                 {
-                    TextOutBuffer[WriteIdx++] = ActiveFile.HexText[Idx];
+                    TextOutBuffer[WriteIdx++] = File.HexText[Idx];
                 }
                 ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
             }
             else
             {
-                const char* LineBegin = ActiveFile.HexText + BeginIdx;
-                const char* LineEnd = ActiveFile.HexText + EndIdx;
+                const char* LineBegin = File.HexText + BeginIdx;
+                const char* LineEnd = File.HexText + EndIdx;
                 ImGui::TextUnformatted(LineBegin, LineEnd);
             }
         }
@@ -159,14 +159,46 @@ void OxEd_ImGui_DrawActiveFile()
 
         ImGui::EndChild();
     }
-    ImGui::End();
+}
+
+void OxEd_ImGui_DrawTabBar()
+{
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+
+    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_FittingPolicyDefault_ | ImGuiTabBarFlags_Reorderable;
+    tab_bar_flags |= ImGuiTabBarFlags_DrawSelectedOverline;
+
+    bool bFileOpen = OpenFiles.Num > 0;
+    if (bFileOpen && ImGui::Begin("OxEd_ImGui_DrawFile", nullptr, flags))
+    {
+        if (ImGui::BeginTabBar("##tabs", tab_bar_flags))
+        {
+            for (int FileIdx = 0; FileIdx < OpenFiles.Num; FileIdx++)
+            {
+                HexFile& CurrFile = OpenFiles[FileIdx];
+
+                ImGuiTabItemFlags tab_flags = 0; // ImGuiTabItemFlags_UnsavedDocument
+                bool visible = ImGui::BeginTabItem(CurrFile.FileName, nullptr, tab_flags);
+
+                if (visible)
+                {
+                    OxEd_ImGui_DrawFile(CurrFile);
+                    ImGui::EndTabItem();
+                }
+            }
+
+            ImGui::EndTabBar();
+        }
+
+        ImGui::End();
+    }
 }
 
 void OxEd_ImGui_Draw()
 {
     OxEd_ImGui_DrawMenuBar();
-    if (ActiveFile.FileContents)
-    {
-        OxEd_ImGui_DrawActiveFile();
-    }
+    OxEd_ImGui_DrawTabBar();
 }

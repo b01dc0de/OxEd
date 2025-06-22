@@ -50,6 +50,7 @@ char GetHex(u8 Value)
             return (Value - 10) + 0x41;
         }
     }
+    return ' ';
 }
 
 char GetHighHex(u8 Value)

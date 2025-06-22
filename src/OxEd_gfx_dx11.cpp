@@ -28,7 +28,7 @@ void Graphics_DX11::UpdateAndDraw()
     DX_ImmediateContext->ClearRenderTargetView(DX_RenderTargetView, ClearColor);
     DX_ImmediateContext->ClearDepthStencilView(DX_DepthStencilView, D3D11_CLEAR_DEPTH, fDepth, 0);
 
-    { // ImGui: Frame begin
+    { // Dear ImGui: Frame begin
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
@@ -41,7 +41,7 @@ void Graphics_DX11::UpdateAndDraw()
         ImGui::ShowDemoWindow();
     }
 
-    { // IMGUI: Frame End
+    { // Dear ImGui: Frame End
         ImGui::Render();
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
     }
@@ -166,7 +166,6 @@ int Graphics_DX11::Init()
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.IniFilename = nullptr;
         io.FontGlobalScale = 1.0f;
 
