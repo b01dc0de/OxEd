@@ -55,8 +55,29 @@ using namespace OxEd_State;
 
 struct OxEd_DrawParams
 {
+    static constexpr int DefaultRowWidth = 32;
+    static constexpr int MinWidth = 1;
+    static constexpr int MaxWidth = 64;
+
+
     bool bLineNumbers = false;
+    bool bAutoRowWidth = false;
+    int RowWidth = DefaultRowWidth;
 } DrawParams;
+
+bool CheckFileAlreadyOpened(const char* FileName)
+{
+    bool bResult = false;
+    for (int FileIdx = 0; FileIdx < OpenFiles.Num; FileIdx++)
+    {
+        if (strcmp(FileName, OpenFiles[FileIdx].FileName) == 0)
+        {
+            bResult = true;
+            break;
+        }
+    }
+    return bResult;
+}
 
 void OxEd_Win32OpenFileDialog()
 {
@@ -81,14 +102,17 @@ void OxEd_Win32OpenFileDialog()
     BOOL bResult = GetOpenFileNameA(&DialogState);
     if (bResult)
     { // User hit 'OK'
-        FileContentsT NewFile = {};
-        ReadFileContents(FileNameBuffer, NewFile);
-
-        if (NewFile.Contents)
+        if (!CheckFileAlreadyOpened(FileNameBuffer))
         {
-            HexFile NewHexFile = {};
-            NewHexFile.SetFile(NewFile);
-            OpenFiles.Add(NewHexFile);
+            FileContentsT NewFile = {};
+            ReadFileContents(FileNameBuffer, NewFile);
+
+            if (NewFile.Contents)
+            {
+                HexFile NewHexFile = {};
+                NewHexFile.SetFile(NewFile);
+                OpenFiles.Add(NewHexFile);
+            }
         }
     }
     else
@@ -113,7 +137,13 @@ void OxEd_ImGui_DrawMenuBar()
         if (ImGui::BeginMenu("Options"))
         {
             ImGui::Checkbox("Line Numbers", &DrawParams.bLineNumbers);
+            ImGui::Checkbox("Auto Row Width", &DrawParams.bAutoRowWidth);
+            if (!DrawParams.bAutoRowWidth)
+            {
+                ImGui::DragInt("Row Width", &DrawParams.RowWidth, 1, OxEd_DrawParams::MinWidth, OxEd_DrawParams::MaxWidth, "%d", ImGuiSliderFlags_AlwaysClamp);
+            }
             ImGui::EndMenu();
+
         }
         ImGui::EndMainMenuBar();
     }
@@ -121,17 +151,26 @@ void OxEd_ImGui_DrawMenuBar()
 
 void OxEd_ImGui_DrawFile(HexFile& File)
 {
-    constexpr int BytesPerLine = 32;
-    constexpr int LineNumberWidth = 1;
-    constexpr int LineWidth = (BytesPerLine * 3) + 1 + (LineNumberWidth + 1);
+    int BytesPerRow = 0;
 
-    constexpr static int StartLine = 0;
-    int NumLines = File.FileSize / BytesPerLine + (File.FileSize % BytesPerLine == 0 ?  0 : 1);
+    if (DrawParams.bAutoRowWidth)
+    {
+        float AvailWidth = ImGui::GetContentRegionAvail().x;
+        BytesPerRow = OxEd_DrawParams::DefaultRowWidth;
+        // TODO: Actually calculate how many bytes can be displayed with available width + current text style (monospace font)
+    }
+    else
+    {
+        BytesPerRow = DrawParams.RowWidth;
+    }
+
+    ASSERT(BytesPerRow != 0);
+    int NumLines = File.FileSize / BytesPerRow + (File.FileSize % BytesPerRow == 0 ? 0 : 1);
+    int LineWidth = BytesPerRow * 3;
 
     ImVec4 ForegroundColor = RGB_TO_FLOAT4(198, 166, 247);
 
     {
-        //ImGui::Text("%s", File.FileName);
         ImGui::BeginChild("ActiveFile_Contents");
         ImGui::PushStyleColor(ImGuiCol_Text, ForegroundColor);
         for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
@@ -141,7 +180,7 @@ void OxEd_ImGui_DrawFile(HexFile& File)
             if (DrawParams.bLineNumbers)
             {
                 char TextOutBuffer[sizeof("OxAABBCCDD ")] = {};
-                int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X ", LineIdx);
+                int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X", LineIdx);
                 ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
                 ImGui::SameLine();
             }
