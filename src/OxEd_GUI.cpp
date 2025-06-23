@@ -172,6 +172,17 @@ void OxEd_ImGui_DrawFile(HexFile& File)
     ASSERT(BytesPerRow != 0);
     int NumLines = File.FileSize / BytesPerRow + (File.FileSize % BytesPerRow == 0 ? 0 : 1);
     int LineWidth = BytesPerRow * 3;
+    auto Hack_GetWidthDecimal = [](int Value) -> int
+    {
+        int Width = 0;
+        while (Value > 0)
+        {
+            Value /= 10;
+            Width++;
+        }
+        return Width;
+    };
+    int MaxLineNoWidth = Hack_GetWidthDecimal(NumLines + 1);
 
     ImVec4 LineNumbersColor = RGB_TO_FLOAT4(166, 227, 161);
     ImVec4 DataOffsetsColor = RGB_TO_FLOAT4(220, 199, 123);
@@ -187,9 +198,8 @@ void OxEd_ImGui_DrawFile(HexFile& File)
             if (DrawParams.bLineNumbers)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, LineNumbersColor);
-                int NumLeadingZeroes = 0; // TODO: Calculate for real
                 char TextOutBuffer[sizeof("OxAABBCCDD ")] = {};
-                int WriteIdx = sprintf_s(TextOutBuffer, "%0*d", NumLeadingZeroes, LineIdx);
+                int WriteIdx = sprintf_s(TextOutBuffer, "%*d", MaxLineNoWidth, LineIdx + 1);
                 ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
                 ImGui::SameLine();
                 ImGui::PopStyleColor();
