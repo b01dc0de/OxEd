@@ -59,8 +59,9 @@ struct OxEd_DrawParams
     static constexpr int MinWidth = 1;
     static constexpr int MaxWidth = 64;
 
-
     bool bLineNumbers = false;
+    bool bDataOffset = false;
+    bool bDisplayASCII = false;
     bool bAutoRowWidth = false;
     int RowWidth = DefaultRowWidth;
 } DrawParams;
@@ -137,7 +138,10 @@ void OxEd_ImGui_DrawMenuBar()
         if (ImGui::BeginMenu("Options"))
         {
             ImGui::Checkbox("Line Numbers", &DrawParams.bLineNumbers);
+            ImGui::Checkbox("Data Offset", &DrawParams.bDataOffset);
+            ImGui::Checkbox("Display Decoded ASCII", &DrawParams.bDisplayASCII);
             ImGui::Checkbox("Auto Row Width", &DrawParams.bAutoRowWidth);
+
             if (!DrawParams.bAutoRowWidth)
             {
                 ImGui::DragInt("Row Width", &DrawParams.RowWidth, 1, OxEd_DrawParams::MinWidth, OxEd_DrawParams::MaxWidth, "%d", ImGuiSliderFlags_AlwaysClamp);
@@ -153,11 +157,12 @@ void OxEd_ImGui_DrawFile(HexFile& File)
 {
     int BytesPerRow = 0;
 
+    ImVec2 AvailRegionSize = ImGui::GetContentRegionAvail();
+
     if (DrawParams.bAutoRowWidth)
     {
-        float AvailWidth = ImGui::GetContentRegionAvail().x;
-        BytesPerRow = OxEd_DrawParams::DefaultRowWidth;
         // TODO: Actually calculate how many bytes can be displayed with available width + current text style (monospace font)
+        BytesPerRow = OxEd_DrawParams::DefaultRowWidth;
     }
     else
     {
@@ -168,21 +173,35 @@ void OxEd_ImGui_DrawFile(HexFile& File)
     int NumLines = File.FileSize / BytesPerRow + (File.FileSize % BytesPerRow == 0 ? 0 : 1);
     int LineWidth = BytesPerRow * 3;
 
-    ImVec4 ForegroundColor = RGB_TO_FLOAT4(198, 166, 247);
+    ImVec4 LineNumbersColor = RGB_TO_FLOAT4(166, 227, 161);
+    ImVec4 DataOffsetsColor = RGB_TO_FLOAT4(220, 199, 123);
+    ImVec4 HexDataColor = RGB_TO_FLOAT4(198, 166, 247);
 
     {
         ImGui::BeginChild("ActiveFile_Contents");
-        ImGui::PushStyleColor(ImGuiCol_Text, ForegroundColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, HexDataColor);
         for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
         {
             size_t BeginIdx = LineWidth * LineIdx;
             size_t EndIdx = Clamp((size_t)(BeginIdx + LineWidth - 1), (size_t)0, File.HexTextSize - 1);
             if (DrawParams.bLineNumbers)
             {
+                ImGui::PushStyleColor(ImGuiCol_Text, LineNumbersColor);
+                int NumLeadingZeroes = 0; // TODO: Calculate for real
                 char TextOutBuffer[sizeof("OxAABBCCDD ")] = {};
-                int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X", LineIdx);
+                int WriteIdx = sprintf_s(TextOutBuffer, "%0*d", NumLeadingZeroes, LineIdx);
                 ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
                 ImGui::SameLine();
+                ImGui::PopStyleColor();
+            }
+            if (DrawParams.bDataOffset)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, DataOffsetsColor);
+                char TextOutBuffer[sizeof("OxAABBCCDD ")] = {};
+                int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X", LineIdx * BytesPerRow);
+                ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
+                ImGui::SameLine();
+                ImGui::PopStyleColor();
             }
 
             const char* LineBegin = File.HexText + BeginIdx;
@@ -202,7 +221,7 @@ void OxEd_ImGui_DrawOpenFiles()
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
 
-    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_FittingPolicyDefault_ | ImGuiTabBarFlags_Reorderable;
+    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyDefault_ | ImGuiTabBarFlags_Reorderable;
     tab_bar_flags |= ImGuiTabBarFlags_DrawSelectedOverline;
 
     bool bFileOpen = OpenFiles.Num > 0;

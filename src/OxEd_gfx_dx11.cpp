@@ -35,11 +35,13 @@ void Graphics_DX11::UpdateAndDraw()
     }
 
     OxEd_ImGui_Draw();
+#if _DEBUG
     static bool bImGuiShowDemoWindow = true;
     if (bImGuiShowDemoWindow)
     {
         ImGui::ShowDemoWindow();
     }
+#endif // _DEBUG
 
     { // Dear ImGui: Frame End
         ImGui::Render();
