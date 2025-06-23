@@ -140,20 +140,15 @@ void OxEd_ImGui_DrawFile(HexFile& File)
             size_t EndIdx = Clamp((size_t)(BeginIdx + LineWidth - 1), (size_t)0, File.HexTextSize - 1);
             if (DrawParams.bLineNumbers)
             {
-                char TextOutBuffer[LineWidth + 11] = {};
+                char TextOutBuffer[sizeof("OxAABBCCDD ")] = {};
                 int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X ", LineIdx);
-                for (size_t Idx = BeginIdx; Idx <= EndIdx; Idx++)
-                {
-                    TextOutBuffer[WriteIdx++] = File.HexText[Idx];
-                }
                 ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
+                ImGui::SameLine();
             }
-            else
-            {
-                const char* LineBegin = File.HexText + BeginIdx;
-                const char* LineEnd = File.HexText + EndIdx;
-                ImGui::TextUnformatted(LineBegin, LineEnd);
-            }
+
+            const char* LineBegin = File.HexText + BeginIdx;
+            const char* LineEnd = File.HexText + EndIdx;
+            ImGui::TextUnformatted(LineBegin, LineEnd);
         }
         ImGui::PopStyleColor();
 
@@ -161,7 +156,7 @@ void OxEd_ImGui_DrawFile(HexFile& File)
     }
 }
 
-void OxEd_ImGui_DrawTabBar()
+void OxEd_ImGui_DrawOpenFiles()
 {
     const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -200,5 +195,5 @@ void OxEd_ImGui_DrawTabBar()
 void OxEd_ImGui_Draw()
 {
     OxEd_ImGui_DrawMenuBar();
-    OxEd_ImGui_DrawTabBar();
+    OxEd_ImGui_DrawOpenFiles();
 }
