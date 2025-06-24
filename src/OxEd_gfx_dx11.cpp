@@ -1,6 +1,4 @@
-#include "OxEd_gfx_dx11.h"
-#include "OxEd_GUI.h"
-#include "Utils.h"
+#include "OxEd.h"
 
 namespace Graphics_DX11_State
 {
@@ -20,42 +18,24 @@ namespace Graphics_DX11_State
 }
 using namespace Graphics_DX11_State;
 
-void Graphics_DX11::UpdateAndDraw()
+void OxEd_Gfx_dx11::FrameBegin()
 {
     DX_ImmediateContext->OMSetRenderTargets(1, &DX_RenderTargetView, DX_DepthStencilView);
     constexpr float ClearColor[] = RGB_TO_FLOAT4(30, 30, 46);
     constexpr float fDepth = 1.0f;
     DX_ImmediateContext->ClearRenderTargetView(DX_RenderTargetView, ClearColor);
     DX_ImmediateContext->ClearDepthStencilView(DX_DepthStencilView, D3D11_CLEAR_DEPTH, fDepth, 0);
+}
 
-    { // Dear ImGui: Frame begin
-        ImGui_ImplDX11_NewFrame();
-        ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
-    }
-
-    OxEd_ImGui_Draw();
-#if _DEBUG
-    static bool bImGuiShowDemoWindow = true;
-    if (bImGuiShowDemoWindow)
-    {
-        ImGui::ShowDemoWindow();
-    }
-#endif // _DEBUG
-
-    { // Dear ImGui: Frame End
-        ImGui::Render();
-        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-    }
-
+void OxEd_Gfx_dx11::FrameEnd()
+{
     DX_SwapChain->Present(0, 0);
 }
 
-
-int Graphics_DX11::Init()
+bool OxEd_Gfx_dx11::Init()
 {
-#define DXCHECK(Result) if (FAILED(Result)) { return -1; }
-#define DXCHECKMSG(Result, Msg) if (FAILED(Result)) { OutputDebugStringA((Msg)); return -1; }
+#define DXCHECK(Result) if (FAILED(Result)) { return false; }
+#define DXCHECKMSG(Result, Msg) if (FAILED(Result)) { OutputDebugStringA((Msg)); return false; }
 
     HRESULT Result = S_OK;
 
@@ -163,29 +143,11 @@ int Graphics_DX11::Init()
     Viewport_Desc.TopLeftY = 0;
     DX_ImmediateContext->RSSetViewports(1, &Viewport_Desc);
 
-    { // Dear Imgui: Init
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        io.IniFilename = nullptr;
-        io.FontGlobalScale = 1.0f;
-
-        ImGui_ImplWin32_Init(hWindow);
-        ImGui_ImplDX11_Init(DX_Device, DX_ImmediateContext);
-    }
-
-    return Result;
+    return !FAILED(Result);
 }
 
-void Graphics_DX11::Term()
+bool OxEd_Gfx_dx11::Term()
 {
-    { // Dear ImGui: Shutdown
-        ImGui_ImplDX11_Shutdown();
-        ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
-    }
-
 #define SAFE_RELEASE(Ptr) if (Ptr) {Ptr->Release();}
 
     SAFE_RELEASE(DX_BackBuffer);
@@ -199,5 +161,26 @@ void Graphics_DX11::Term()
     SAFE_RELEASE(DX_SwapChain);
     SAFE_RELEASE(DX_ImmediateContext);
     SAFE_RELEASE(DX_Device);
+
+    return true;
 }
 
+void OxEd_Gfx_dx11::ImGui_Init()
+{
+    ImGui_ImplDX11_Init(DX_Device, DX_ImmediateContext);
+}
+
+void OxEd_Gfx_dx11::ImGui_Term()
+{
+    ImGui_ImplDX11_Shutdown();
+}
+
+void OxEd_Gfx_dx11::ImGui_NewFrame()
+{
+    ImGui_ImplDX11_NewFrame();
+}
+
+void OxEd_Gfx_dx11::ImGui_RenderDrawData(ImDrawData* _ImDrawData)
+{
+    ImGui_ImplDX11_RenderDrawData(_ImDrawData);
+}

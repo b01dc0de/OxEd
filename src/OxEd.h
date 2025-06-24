@@ -5,17 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-// DX11:
-#include <d3d11.h>
-#include <d3dcompiler.h>
-#include <dxgi.h>
 
-// Dear ImGui:
-#include "imgui/imgui.h"
-#include "imgui/backends/imgui_impl_win32.h"
-#include "imgui/backends/imgui_impl_dx11.h"
-
-// Types
+// Fixed width types:
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
@@ -27,9 +18,17 @@ using s64 = int64_t;
 using f32 = float;
 using f64 = float;
 
+void OxEd_Run();
+
+// Dear ImGui:
+#include "imgui/imgui.h"
+// OxEd platform:
+#include "OxEd_platform.h"
+// OxEd gfx backend:
+#include "OxEd_gfx.h"
+
 // Globals
 extern bool bRunning;
-extern HWND hWindow;
 extern UINT WinResX;
 extern UINT WinResY;
 

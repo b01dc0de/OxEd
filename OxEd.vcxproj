@@ -148,7 +148,7 @@
     <ClCompile Include="src\OxEd.cpp" />
     <ClCompile Include="src\Math.cpp" />
     <ClCompile Include="src\OxEd_GUI.cpp" />
-    <ClCompile Include="src\OxEd_win32.cpp" />
+    <ClCompile Include="src\OxEd_platform_win32.cpp" />
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -156,11 +156,13 @@
     <ClInclude Include="libs\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="libs\imgui\imgui.h" />
     <ClInclude Include="libs\imgui\imgui_internal.h" />
+    <ClInclude Include="src\OxEd_gfx.h" />
     <ClInclude Include="src\OxEd_gfx_dx11.h" />
     <ClInclude Include="src\OxEd.h" />
     <ClInclude Include="src\Math.h" />
     <ClInclude Include="src\OxEd_GUI.h" />
-    <ClInclude Include="src\OxEd_win32.h" />
+    <ClInclude Include="src\OxEd_platform.h" />
+    <ClInclude Include="src\OxEd_platform_win32.h" />
     <ClInclude Include="src\Utils.h" />
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,11 @@
 #include "OxEd.h"
-#include "OxEd_win32.h"
-#include "OxEd_gfx_dx11.h"
+
+HWND hWindow = nullptr;
+
+HINSTANCE _hInst;
+HINSTANCE _hPrevInst;
+PSTR _CmdLine;
+int _WndShow;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -83,32 +88,54 @@ int WindowMsgLoop(HWND InWindow)
 
 void OxEd_Tick()
 {
+}
+
+void OxEd_Platform_win32::Tick()
+{
     WindowMsgLoop(hWindow);
-    UpdateWindow(hWindow);
-    Graphics_DX11::UpdateAndDraw();
+    //UpdateWindow(hWindow);
+}
+
+bool OxEd_Platform_win32::Init()
+{
+	HWND hWnd = InitWindow(_hInst, WinResX, WinResY);
+	if (hWnd)
+	{
+        hWindow = hWnd;
+        ShowWindow(hWindow, SW_SHOWNORMAL);
+	}
+	return hWnd != nullptr;
+}
+
+bool OxEd_Platform_win32::Term()
+{
+	return true;
+}
+
+void OxEd_Platform_win32::ImGui_Init()
+{
+    ImGui_ImplWin32_Init(hWindow);
+}
+
+void OxEd_Platform_win32::ImGui_Term()
+{
+    ImGui_ImplWin32_Shutdown();
+}
+
+void OxEd_Platform_win32::ImGui_NewFrame()
+{
+	ImGui_ImplWin32_NewFrame();
 }
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
 {
-	(void)hPrevInst;
-	(void)CmdLine;
-	(void)WndShow;
-	if (HWND hWnd = InitWindow(hInst, WinResX, WinResY))
-	{
-		hWindow = hWnd;
-
-		if (Graphics_DX11::Init() != S_OK) { DebugBreak(); }
-		ShowWindow(hWindow, SW_SHOWNORMAL);
-
-		bRunning = true;
-		while (bRunning)
-		{
-			OxEd_Tick();
-		}
-
-		Graphics_DX11::Term();
-	}
-
+    _hInst = hInst;
+    _hPrevInst = hPrevInst;
+    _CmdLine = CmdLine;
+    _WndShow = WndShow;
+	OxEd_Run();
 	return 0;
 }
+
+
 

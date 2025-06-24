@@ -51,7 +51,7 @@
     <ClCompile Include="libs\imgui\imgui_widgets.cpp">
       <Filter>libs\imgui\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\OxEd_win32.cpp">
+    <ClCompile Include="src\OxEd_platform_win32.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\OxEd_gfx_dx11.cpp">
@@ -83,13 +83,19 @@
     <ClInclude Include="libs\imgui\imgui_internal.h">
       <Filter>libs\imgui\src</Filter>
     </ClInclude>
-    <ClInclude Include="src\OxEd_win32.h">
+    <ClInclude Include="src\OxEd_platform_win32.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\OxEd_gfx_dx11.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\OxEd_GUI.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OxEd_gfx.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OxEd_platform.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
