@@ -13,7 +13,6 @@ struct OxEd_Gfx_dummy
     static void ImGui_NewFrame() {}
     static void ImGui_RenderDrawData(ImDrawData*) {}
 };
-
 //using OxEd_GfxT = OxEd_Gfx_dummy;
 
 #include "OxEd_gfx_dx11.h"

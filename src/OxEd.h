@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
+// Dear ImGui:
+#include "imgui/imgui.h"
+
 // Fixed width types:
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -18,10 +21,11 @@ using s64 = int64_t;
 using f32 = float;
 using f64 = float;
 
+// Project main:
 void OxEd_Run();
-
-// Dear ImGui:
-#include "imgui/imgui.h"
+// Project headers:
+#include "Math.h"
+#include "Utils.h"
 // OxEd platform:
 #include "OxEd_platform.h"
 // OxEd gfx backend:
@@ -31,13 +35,6 @@ void OxEd_Run();
 extern bool bRunning;
 extern UINT WinResX;
 extern UINT WinResY;
-
-#define APPNAME() ("OxEd")
-#define ASSERT(Exp) if (!(Exp)) { DebugBreak(); }
-
-// Project headers
-#include "Math.h"
-#include "Utils.h"
 
 #endif // OXED_H
 

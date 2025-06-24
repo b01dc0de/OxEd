@@ -11,7 +11,6 @@ struct OxEd_Platform_dummy
     static void ImGui_Term() {}
     static void ImGui_NewFrame() {}
 };
-
 //using OxEd_PlatformT = OxEd_Platform_dummy;
 
 #include "OxEd_platform_win32.h"

@@ -1,51 +1,10 @@
 #include "OxEd.h"
 
-HWND hWindow = nullptr;
-
-HINSTANCE _hInst;
-HINSTANCE _hPrevInst;
-PSTR _CmdLine;
-int _WndShow;
-
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-HWND InitWindow(HINSTANCE hInstance, int Width, int Height)
-{
-#if _DEBUG
-	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-#endif // _DEBUG
-
-	WNDCLASSEXA WndClass = {};
-	WndClass.cbSize = sizeof(WNDCLASSEXA);
-	WndClass.style = CS_GLOBALCLASS | CS_HREDRAW | CS_VREDRAW;
-	WndClass.lpfnWndProc = WindowProc;
-	WndClass.hInstance = hInstance;
-	WndClass.lpszClassName = APPNAME();
-
-	RegisterClassExA(&WndClass);
-
-	RECT WndRect = { 0, 0, (LONG)Width, (LONG)Height};
-	UINT WndStyle = WS_CAPTION | WS_OVERLAPPEDWINDOW;
-	UINT WndExStyle = 0;
-	AdjustWindowRectEx(&WndRect, WndStyle, FALSE, WndExStyle);
-
-	HWND NewWindow = CreateWindowExA(
-		WndExStyle,
-		APPNAME(),
-		APPNAME(),
-		WndStyle,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		WndRect.right - WndRect.left,
-		WndRect.bottom - WndRect.top,
-		nullptr,
-		nullptr,
-		hInstance,
-		nullptr
-	);
-
-	return NewWindow;
-}
+HWND OxEd_Platform_win32::hWindow = nullptr;
+HINSTANCE OxEd_Platform_win32::_hInst;
+//HINSTANCE OxEd_Platform_win32::_hPrevInst;
+//PSTR OxEd_Platform_win32::_CmdLine;
+//int OxEd_Platform_win32::_WndShow;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -73,32 +32,88 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return Result;
 }
 
-int WindowMsgLoop(HWND InWindow)
+void OxEd_Platform_win32::OpenFile(FileContentsT& OutContents)
+{
+    char* FileNameBuffer = new char[MAX_PATH]{};
+
+    OPENFILENAMEA DialogState = {};
+    DialogState.lStructSize = sizeof(OPENFILENAMEA);
+    DialogState.hwndOwner = hWindow;
+    DialogState.hInstance = nullptr;
+    DialogState.lpstrFilter = nullptr;
+    DialogState.lpstrCustomFilter = nullptr;
+    DialogState.nFilterIndex = 0;
+    DialogState.lpstrFile = FileNameBuffer;
+    DialogState.nMaxFile = MAX_PATH;
+    DialogState.lpstrFileTitle = nullptr;
+    DialogState.lpstrInitialDir = nullptr;
+    DialogState.lpstrTitle = nullptr;
+    DialogState.Flags = OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST;
+    DialogState.lpstrDefExt = nullptr;
+    DialogState.lCustData = 0;
+    DialogState.lpfnHook = nullptr;
+    BOOL bResult = GetOpenFileNameA(&DialogState);
+    if (bResult)
+    {
+		// User hit 'OK'
+        ReadFileContents(FileNameBuffer, OutContents);
+		OutContents.Name = FileNameBuffer;
+    }
+    else
+    {
+		// User canceled dialog, or other error occured
+        //DWORD ExError = CommDlgExtendedError();
+        //DebugBreak();
+    }
+}
+
+void OxEd_Platform_win32::Tick()
 {
 	MSG Msg = {};
 	int MsgCount = 0;
-    while (PeekMessageA(&Msg, InWindow, 0, 0, PM_REMOVE) > 0)
+    while (PeekMessageA(&Msg, hWindow, 0, 0, PM_REMOVE) > 0)
     {
         TranslateMessage(&Msg);
         DispatchMessageA(&Msg);
 		MsgCount++;
     }
-	return MsgCount;
-}
-
-void OxEd_Tick()
-{
-}
-
-void OxEd_Platform_win32::Tick()
-{
-    WindowMsgLoop(hWindow);
-    //UpdateWindow(hWindow);
+	UpdateWindow(hWindow);
 }
 
 bool OxEd_Platform_win32::Init()
 {
-	HWND hWnd = InitWindow(_hInst, WinResX, WinResY);
+#if _DEBUG
+	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+#endif // _DEBUG
+
+	WNDCLASSEXA WndClass = {};
+	WndClass.cbSize = sizeof(WNDCLASSEXA);
+	WndClass.style = CS_GLOBALCLASS | CS_HREDRAW | CS_VREDRAW;
+	WndClass.lpfnWndProc = WindowProc;
+	WndClass.hInstance = _hInst;
+	WndClass.lpszClassName = APPNAME();
+
+	RegisterClassExA(&WndClass);
+
+	RECT WndRect = { 0, 0, (LONG)WinResX, (LONG)WinResY};
+	UINT WndStyle = WS_CAPTION | WS_OVERLAPPEDWINDOW;
+	UINT WndExStyle = 0;
+	AdjustWindowRectEx(&WndRect, WndStyle, FALSE, WndExStyle);
+
+    HWND hWnd = CreateWindowExA(
+		WndExStyle,
+		APPNAME(),
+		APPNAME(),
+		WndStyle,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		WndRect.right - WndRect.left,
+		WndRect.bottom - WndRect.top,
+		nullptr,
+		nullptr,
+		_hInst,
+		nullptr
+	);
 	if (hWnd)
 	{
         hWindow = hWnd;
@@ -129,13 +144,13 @@ void OxEd_Platform_win32::ImGui_NewFrame()
 
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
 {
-    _hInst = hInst;
-    _hPrevInst = hPrevInst;
-    _CmdLine = CmdLine;
-    _WndShow = WndShow;
+    OxEd_Platform_win32::_hInst = hInst;
+    //OxEd_Platform_win32::_hPrevInst = hPrevInst;
+    //OxEd_Platform_win32::_CmdLine = CmdLine;
+    //OxEd_Platform_win32::_WndShow = WndShow;
+
 	OxEd_Run();
+
 	return 0;
 }
-
-
 

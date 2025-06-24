@@ -1,22 +1,15 @@
 #include "OxEd.h"
 
-namespace Graphics_DX11_State
-{
-    IDXGISwapChain* DX_SwapChain = nullptr;
-    ID3D11Device* DX_Device = nullptr;
-    D3D_FEATURE_LEVEL UsedFeatureLevel;
-    ID3D11DeviceContext* DX_ImmediateContext = nullptr;
-
-    ID3D11Texture2D* DX_BackBuffer = nullptr;
-    ID3D11RenderTargetView* DX_RenderTargetView = nullptr;
-
-    IDXGIFactory1* DX_Factory = nullptr;
-
-    ID3D11RasterizerState* DX_RasterizerState = nullptr;
-    ID3D11Texture2D* DX_DepthStencil = nullptr;
-    ID3D11DepthStencilView* DX_DepthStencilView = nullptr;
-}
-using namespace Graphics_DX11_State;
+IDXGISwapChain* OxEd_Gfx_dx11::DX_SwapChain = nullptr;
+ID3D11Device* OxEd_Gfx_dx11::DX_Device = nullptr;
+D3D_FEATURE_LEVEL OxEd_Gfx_dx11::UsedFeatureLevel;
+ID3D11DeviceContext* OxEd_Gfx_dx11::DX_ImmediateContext = nullptr;
+ID3D11Texture2D* OxEd_Gfx_dx11::DX_BackBuffer = nullptr;
+ID3D11RenderTargetView* OxEd_Gfx_dx11::DX_RenderTargetView = nullptr;
+IDXGIFactory1* OxEd_Gfx_dx11::DX_Factory = nullptr;
+ID3D11RasterizerState* OxEd_Gfx_dx11::DX_RasterizerState = nullptr;
+ID3D11Texture2D* OxEd_Gfx_dx11::DX_DepthStencil = nullptr;
+ID3D11DepthStencilView* OxEd_Gfx_dx11::DX_DepthStencilView = nullptr;
 
 void OxEd_Gfx_dx11::FrameBegin()
 {
@@ -63,7 +56,7 @@ bool OxEd_Gfx_dx11::Init()
     swapchain_desc.BufferDesc.RefreshRate.Numerator = FrameRefreshRate;
     swapchain_desc.BufferDesc.RefreshRate.Denominator = 1;
     swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapchain_desc.OutputWindow = hWindow;
+    swapchain_desc.OutputWindow = OxEd_PlatformT::hWindow; // NOTE: must be Platform_win32
     swapchain_desc.SampleDesc = SharedSampleDesc;
     swapchain_desc.Windowed = true;
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
