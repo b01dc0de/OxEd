@@ -155,6 +155,7 @@
     <ClInclude Include="libs\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="libs\imgui\imgui.h" />
     <ClInclude Include="libs\imgui\imgui_internal.h" />
+    <ClInclude Include="src\OxEd_build.h" />
     <ClInclude Include="src\OxEd_gfx.h" />
     <ClInclude Include="src\OxEd_gfx_dx11.h" />
     <ClInclude Include="src\OxEd.h" />

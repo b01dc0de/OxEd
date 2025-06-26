@@ -1,7 +1,8 @@
 #include "OxEd.h"
 
+float OxEd_Platform_win32::fScale = 1.0f;
 HWND OxEd_Platform_win32::hWindow = nullptr;
-HINSTANCE OxEd_Platform_win32::_hInst;
+HINSTANCE OxEd_Platform_win32::_hInst = nullptr;
 //HINSTANCE OxEd_Platform_win32::_hPrevInst;
 //PSTR OxEd_Platform_win32::_CmdLine;
 //int OxEd_Platform_win32::_WndShow;
@@ -82,9 +83,9 @@ void OxEd_Platform_win32::Tick()
 
 bool OxEd_Platform_win32::Init()
 {
-#if _DEBUG
+#if OXED_CONFIG_DEBUG()
 	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-#endif // _DEBUG
+#endif // OXED_CONFIG_DEBUG()
 
 	WNDCLASSEXA WndClass = {};
 	WndClass.cbSize = sizeof(WNDCLASSEXA);
@@ -100,7 +101,7 @@ bool OxEd_Platform_win32::Init()
 	UINT WndExStyle = 0;
 	AdjustWindowRectEx(&WndRect, WndStyle, FALSE, WndExStyle);
 
-    HWND hWnd = CreateWindowExA(
+    hWindow = CreateWindowExA(
 		WndExStyle,
 		APPNAME(),
 		APPNAME(),
@@ -114,12 +115,12 @@ bool OxEd_Platform_win32::Init()
 		_hInst,
 		nullptr
 	);
-	if (hWnd)
+	if (hWindow)
 	{
-        hWindow = hWnd;
         ShowWindow(hWindow, SW_SHOWNORMAL);
+        UpdateWindow(hWindow);
 	}
-	return hWnd != nullptr;
+	return hWindow != nullptr;
 }
 
 bool OxEd_Platform_win32::Term()
@@ -129,6 +130,8 @@ bool OxEd_Platform_win32::Term()
 
 void OxEd_Platform_win32::ImGui_Init()
 {
+    ImGui_ImplWin32_EnableDpiAwareness();
+    fScale = ImGui_ImplWin32_GetDpiScaleForMonitor(::MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY));
     ImGui_ImplWin32_Init(hWindow);
 }
 
@@ -149,7 +152,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndSh
     //OxEd_Platform_win32::_CmdLine = CmdLine;
     //OxEd_Platform_win32::_WndShow = WndShow;
 
-	OxEd_Run();
+	OxEdMain();
 
 	return 0;
 }

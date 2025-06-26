@@ -4,10 +4,10 @@
 // Win32 headers:
 //#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#if _DEBUG
+#if OXED_CONFIG_DEBUG()
     #define _CRTDBG_MAP_ALLOC
     #include <crtdbg.h>
-#endif // _DEBUG
+#endif // OXED_CONFIG_DEBUG()
 
 // Dear ImGui:
 #include "imgui/backends/imgui_impl_win32.h"
@@ -15,6 +15,7 @@
 struct OxEd_Platform_win32
 {
     static const char* Name() { return "PlatformWin32"; }
+    static float Scale() { return fScale; }
     static void OpenFile(FileContentsT& OutContents);
     static void Tick();
     static bool Init();
@@ -23,6 +24,7 @@ struct OxEd_Platform_win32
     static void ImGui_Term();
     static void ImGui_NewFrame();
 
+    static float fScale;
     static HWND hWindow;
     static HINSTANCE _hInst;
     static HINSTANCE _hPrevInst;

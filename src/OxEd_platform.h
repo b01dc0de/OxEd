@@ -4,6 +4,7 @@
 struct OxEd_Platform_dummy
 {
     static const char* Name() { return "PlatformDummy"; }
+    static float Scale() { return 1.0f; }
     static void Tick() {}
     static bool Init() { return true; }
     static bool Term() { return true; }

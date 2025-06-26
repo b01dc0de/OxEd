@@ -6,7 +6,6 @@ D3D_FEATURE_LEVEL OxEd_Gfx_dx11::UsedFeatureLevel;
 ID3D11DeviceContext* OxEd_Gfx_dx11::DX_ImmediateContext = nullptr;
 ID3D11Texture2D* OxEd_Gfx_dx11::DX_BackBuffer = nullptr;
 ID3D11RenderTargetView* OxEd_Gfx_dx11::DX_RenderTargetView = nullptr;
-IDXGIFactory1* OxEd_Gfx_dx11::DX_Factory = nullptr;
 ID3D11RasterizerState* OxEd_Gfx_dx11::DX_RasterizerState = nullptr;
 ID3D11Texture2D* OxEd_Gfx_dx11::DX_DepthStencil = nullptr;
 ID3D11DepthStencilView* OxEd_Gfx_dx11::DX_DepthStencilView = nullptr;
@@ -41,8 +40,6 @@ bool OxEd_Gfx_dx11::Init()
     D3D_FEATURE_LEVEL D3DFeatureLevel = D3D_FEATURE_LEVEL_11_0;
     (void)D3DFeatureLevel;
 
-    CreateDXGIFactory1(__uuidof(IDXGIFactory), (void**)&DX_Factory);
-
     DXGI_SAMPLE_DESC SharedSampleDesc = {};
     SharedSampleDesc.Count = 1;
     SharedSampleDesc.Quality = 0;
@@ -62,9 +59,9 @@ bool OxEd_Gfx_dx11::Init()
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
     UINT CreateDeviceFlags = 0;
-#ifdef _DEBUG
+#if OXED_CONFIG_DEBUG()
     CreateDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
+#endif // OXED_CONFIG_DEBUG()
 
     Result = D3D11CreateDeviceAndSwapChain(
         nullptr,
@@ -150,7 +147,6 @@ bool OxEd_Gfx_dx11::Term()
     SAFE_RELEASE(DX_DepthStencilView);
 
 
-    SAFE_RELEASE(DX_Factory);
     SAFE_RELEASE(DX_SwapChain);
     SAFE_RELEASE(DX_ImmediateContext);
     SAFE_RELEASE(DX_Device);

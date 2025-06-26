@@ -92,6 +92,9 @@
     <ClInclude Include="src\OxEd_platform.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\OxEd_build.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="src\hlsl\BaseShader.hlsl">

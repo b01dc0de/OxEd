@@ -29,8 +29,6 @@ struct OxEd_Gfx_dx11
     static ID3D11Texture2D* DX_BackBuffer;
     static ID3D11RenderTargetView* DX_RenderTargetView;
 
-    static IDXGIFactory1* DX_Factory;
-
     static ID3D11RasterizerState* DX_RasterizerState;
     static ID3D11Texture2D* DX_DepthStencil;
     static ID3D11DepthStencilView* DX_DepthStencilView;
