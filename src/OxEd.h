@@ -21,11 +21,13 @@ using s64 = int64_t;
 using f32 = float;
 using f64 = float;
 
-// Project main:
-void OxEd_Run();
+// Build configuration:
+#include "OxEd_build.h"
 // Project headers:
 #include "Math.h"
 #include "Utils.h"
+// Project main:
+void OxEdMain();
 // OxEd platform:
 #include "OxEd_platform.h"
 // OxEd gfx backend:
