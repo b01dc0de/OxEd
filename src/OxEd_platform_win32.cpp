@@ -35,7 +35,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void OxEd_Platform_win32::OpenFile(FileContentsT& OutContents)
 {
-    char* FileNameBuffer = new char[MAX_PATH]{};
+    char* FileNameBuffer = new char[FileContentsT::MaxNameSize]{};
 
     OPENFILENAMEA DialogState = {};
     DialogState.lStructSize = sizeof(OPENFILENAMEA);
@@ -45,7 +45,7 @@ void OxEd_Platform_win32::OpenFile(FileContentsT& OutContents)
     DialogState.lpstrCustomFilter = nullptr;
     DialogState.nFilterIndex = 0;
     DialogState.lpstrFile = FileNameBuffer;
-    DialogState.nMaxFile = MAX_PATH;
+    DialogState.nMaxFile = FileContentsT::MaxNameSize;
     DialogState.lpstrFileTitle = nullptr;
     DialogState.lpstrInitialDir = nullptr;
     DialogState.lpstrTitle = nullptr;

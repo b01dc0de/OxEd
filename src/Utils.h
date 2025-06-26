@@ -3,12 +3,13 @@
 
 struct FileContentsT
 {
-    const char* Name;
+    static constexpr int MaxNameSize = 260;
+    char* Name;
     size_t Size;
     u8* Contents;
 };
 
-void ReadFileContents(const char* Name, FileContentsT& _FileContents);
+void ReadFileContents(char* Name, FileContentsT& _FileContents);
 void Release(FileContentsT& _FileContents);
 
 template <typename T>
@@ -25,6 +26,16 @@ struct Array
         Capacity = InitCapacity;
         Num = 0;
         Data = new T[Capacity];
+    }
+    ~Array()
+    {
+        if (Data)
+        {
+            delete[] Data;
+        }
+        Capacity = 0;
+        Num = 0;
+        Data = nullptr;
     }
 
     void Grow()
@@ -45,6 +56,17 @@ struct Array
             Grow();
         }
         Data[Num++] = NewItem;
+    }
+    void Remove(size_t Idx)
+    {
+        if (Idx < Num)
+        {
+            for (int ShiftIdx = Idx; ShiftIdx < Num - 1; ShiftIdx++)
+            {
+                Data[ShiftIdx] = Data[ShiftIdx + 1];
+            }
+            Num--;
+        }
     }
 
     T* operator*()

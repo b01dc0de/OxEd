@@ -1,6 +1,6 @@
 #include "OxEd.h" // OxEd.h includes Utils.h
 
-void ReadFileContents(const char* Name, FileContentsT& _FileContents)
+void ReadFileContents(char* Name, FileContentsT& _FileContents)
 {
     // TODO(CKA): Support 64-bit file sizes
     FILE* FileHandle = nullptr;
