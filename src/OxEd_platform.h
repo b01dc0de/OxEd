@@ -1,6 +1,9 @@
 #ifndef OXED_PLATFORM_H
 #define OXED_PLATFORM_H
 
+// Project main:
+extern void OxEdMain();
+
 struct OxEd_Platform_dummy
 {
     static const char* Name() { return "PlatformDummy"; }

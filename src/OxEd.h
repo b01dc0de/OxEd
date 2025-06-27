@@ -26,8 +26,6 @@ using f64 = float;
 // Project headers:
 #include "Math.h"
 #include "Utils.h"
-// Project main:
-void OxEdMain();
 // OxEd platform:
 #include "OxEd_platform.h"
 // OxEd gfx backend:

@@ -148,9 +148,9 @@ void OxEd_Platform_win32::ImGui_NewFrame()
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, PSTR CmdLine, int WndShow)
 {
     OxEd_Platform_win32::_hInst = hInst;
-    //OxEd_Platform_win32::_hPrevInst = hPrevInst;
-    //OxEd_Platform_win32::_CmdLine = CmdLine;
-    //OxEd_Platform_win32::_WndShow = WndShow;
+	(void)hPrevInst; //OxEd_Platform_win32::_hPrevInst = hPrevInst;
+	(void)CmdLine; //OxEd_Platform_win32::_CmdLine = CmdLine;
+	(void)WndShow; //OxEd_Platform_win32::_WndShow = WndShow;
 
 	OxEdMain();
 

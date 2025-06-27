@@ -61,8 +61,8 @@ struct OxEd_GUI
         static constexpr int MinWidth = 1;
         static constexpr int MaxWidth = 64;
 
-        bool bByteOffsets = false;
-        bool bDisplayASCII = false;
+        bool bByteOffsets = true;
+        bool bDisplayAscii = false;
         bool bAutoRowWidth = false;
         int RowWidth = DefaultRowWidth;
     #if OXED_CONFIG_DEBUG()
@@ -73,6 +73,7 @@ struct OxEd_GUI
     static DrawParamsT DrawParams;
     static Array<HexFile> OpenFiles;
 
+    static bool IsCharPrintable(char Value);
     static bool IsFileAlreadyOpen(const char* FileName);
     static void OpenFileDialog();
 
@@ -88,6 +89,11 @@ struct OxEd_GUI
 
 Array<HexFile> OxEd_GUI::OpenFiles;
 OxEd_GUI::DrawParamsT OxEd_GUI::DrawParams;
+
+bool OxEd_GUI::IsCharPrintable(char Value)
+{
+    return Value >= 0x20;
+}
 
 bool OxEd_GUI::IsFileAlreadyOpen(const char* FileName)
 {
@@ -130,7 +136,7 @@ void OxEd_GUI::ImGui_DrawMenuBar()
         if (ImGui::BeginMenu("Options"))
         {
             ImGui::Checkbox("Byte Offsets", &DrawParams.bByteOffsets);
-            ImGui::Checkbox("Display Decoded ASCII", &DrawParams.bDisplayASCII);
+            ImGui::Checkbox("Display Decoded ASCII", &DrawParams.bDisplayAscii);
             ImGui::Checkbox("Auto Row Width", &DrawParams.bAutoRowWidth);
 
             if (!DrawParams.bAutoRowWidth)
@@ -156,52 +162,61 @@ void OxEd_GUI::ImGui_DrawMenuBar()
     }
 }
 
-bool CharIsPrintable(char Value)
-{
-    return Value >= 0x20;
-}
-
 void OxEd_GUI::ImGui_DrawFile(HexFile& File)
 {
-    //ImGui::GetFrameHeightWithSpacing()
-
     int BytesPerRow = 0;
 
-    // TODO: Assert using a monospace font
+    // TODO: Assert that only monospace fonts are used
     //ImGuiStyle& Style = ImGui::GetStyle();
-    ImVec2 TotalRegionSize = ImGui::GetContentRegionAvail();
-    ImVec2 LeftPaneSize = TotalRegionSize;
-    //ImVec2 RightPaneSize{ 0, 0 };
+    //ImFont* Font = ImGui::GetFont();
 
+    ImVec2 TotalRegionSize = ImGui::GetContentRegionAvail();
+    TotalRegionSize.x /= OxEd_PlatformT::Scale();
+    TotalRegionSize.y /= OxEd_PlatformT::Scale();
+
+    ImVec2 LeftPaneSize{ 0, 0 };
+    ImVec2 RightPaneSize{ 0, 0 };
+
+    ImVec2 DataOffsetSize = ImGui::CalcTextSize("0xAABBCCDD ");
     ImVec2 GlyphSize = ImGui::CalcTextSize(" ");
 
-    /*
+    float HexWidth = 0.0f;
+    float AsciiWidth = 0.0f;
+
     float NumGlyphsX = TotalRegionSize.x / GlyphSize.x;
-    float NumGlyphsY = TotalRegionSize.y / GlyphSize.y;
-
-    if (DrawParams.bDisplayASCII)
-    {
-        LeftPaneSize.x *= 0.5f;
-        //RightPaneSize = LeftPaneSize;
-        RightPaneSize = { 0, 0 };
-
-        //LeftPaneSize = { 0, 0 };
-        //RightPaneSize = { 0, 0 };
-    }
-    */
+    //float NumGlyphsY = TotalRegionSize.y / GlyphSize.y;
 
     if (DrawParams.bAutoRowWidth)
     {
-        BytesPerRow = LeftPaneSize.x / GlyphSize.x;
+        bool bDrawScrollbar = true; // TODO:
+        if (DrawParams.bDisplayAscii)
+        {
+            // NOTE(CKA): The ThinkPad I'm developing this on: 2560x1600 @ 1.5 scale / Windows
+            //      The 'correct' number here for the machine I'm testing is 52
+            //      So basically work backwards from that and then tweak so it supports different resolutions+scaling
+            BytesPerRow = (int)(NumGlyphsX / 4.0f) - (bDrawScrollbar ? 4 : 0);
+            HexWidth = (BytesPerRow * 3.0f * GlyphSize.x) + (DrawParams.bByteOffsets ? DataOffsetSize.x : GlyphSize.x) * OxEd_PlatformT::Scale();
+            AsciiWidth = BytesPerRow * GlyphSize.x * OxEd_PlatformT::Scale() / 2.0f;
+            LeftPaneSize.x = HexWidth;
+        }
+        else
+        {
+            BytesPerRow = (int)(NumGlyphsX / 3.0f) - (bDrawScrollbar ? 4 : 0);
+            HexWidth = (BytesPerRow * 3.0f * GlyphSize.x) + (DrawParams.bByteOffsets ? DataOffsetSize.x : GlyphSize.x) * OxEd_PlatformT::Scale();
+            LeftPaneSize.x = HexWidth;
+        }
     }
     else
     {
         BytesPerRow = DrawParams.RowWidth;
+        HexWidth = (BytesPerRow * 3.0f * GlyphSize.x) + (DrawParams.bByteOffsets ? DataOffsetSize.x : GlyphSize.x) * OxEd_PlatformT::Scale();
+        AsciiWidth = BytesPerRow * GlyphSize.x * OxEd_PlatformT::Scale() / 2.0f;
+        LeftPaneSize.x = HexWidth;
     }
 
     ASSERT(BytesPerRow != 0);
-    int NumLines = File.FileSize / BytesPerRow + (File.FileSize % BytesPerRow == 0 ? 0 : 1);
-    int LineWidth = BytesPerRow * 3;
+    size_t NumLines = File.FileSize / BytesPerRow + (File.FileSize % BytesPerRow == 0 ? 0 : 1);
+    size_t LineWidth = BytesPerRow * 3;
 
     ImVec4 LineNumbersColor = RGB_TO_FLOAT4(166, 227, 161);
     ImVec4 DataOffsetsColor = RGB_TO_FLOAT4(220, 199, 123);
@@ -209,7 +224,8 @@ void OxEd_GUI::ImGui_DrawFile(HexFile& File)
     ImVec4 ASCIIColor = RGB_TO_FLOAT4(115, 211, 254);
 
     {
-        ImGui::BeginChild("ImGui_DrawFile__Left", LeftPaneSize, ImGuiChildFlags_ResizeX);
+        //ImGui::BeginChild("DrawFile Left", LeftPaneSize, ImGuiChildFlags_ResizeX);
+        ImGui::BeginChild("DrawFile Left", LeftPaneSize, ImGuiChildFlags_AutoResizeX);
         ImGui::PushStyleColor(ImGuiCol_Text, HexDataColor);
         for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
         {
@@ -219,7 +235,7 @@ void OxEd_GUI::ImGui_DrawFile(HexFile& File)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, DataOffsetsColor);
                 char TextOutBuffer[sizeof("OxAABBCCDD ")] = {};
-                int WriteIdx = sprintf_s(TextOutBuffer, "0x%08X", LineIdx * BytesPerRow);
+                int WriteIdx = sprintf(TextOutBuffer, "0x%08X", LineIdx * BytesPerRow);
                 ImGui::TextUnformatted(TextOutBuffer, TextOutBuffer + WriteIdx);
                 ImGui::SameLine();
                 ImGui::PopStyleColor();
@@ -232,11 +248,10 @@ void OxEd_GUI::ImGui_DrawFile(HexFile& File)
         ImGui::PopStyleColor();
         ImGui::EndChild();
     }
-    /*
-    if (DrawParams.bDisplayASCII)
+    if (DrawParams.bDisplayAscii)
     {
         ImGui::SameLine();
-        ImGui::BeginChild("ImGui_DrawFile__Right", RightPaneSize, ImGuiChildFlags_None);
+        ImGui::BeginChild("DrawFile Right", ImVec2(0, 0), ImGuiChildFlags_None);
         ImGui::PushStyleColor(ImGuiCol_Text, ASCIIColor);
         for (int LineIdx = 0; LineIdx < NumLines; LineIdx++)
         {
@@ -245,7 +260,7 @@ void OxEd_GUI::ImGui_DrawFile(HexFile& File)
             int CharIdx = 0;
             while ((CharIdx < BytesPerRow) && (BeginIdx + CharIdx < File.FileSize))
             {
-                if (CharIsPrintable(File.FileContents[BeginIdx + CharIdx]))
+                if (IsCharPrintable(File.FileContents[BeginIdx + CharIdx]))
                 {
                     AsciiBuffer[CharIdx] = File.FileContents[BeginIdx + CharIdx];
                 }
@@ -261,7 +276,6 @@ void OxEd_GUI::ImGui_DrawFile(HexFile& File)
         ImGui::PopStyleColor();
         ImGui::EndChild();
     }
-    */
 }
 
 void OxEd_GUI::ImGui_DrawOpenFiles()
@@ -340,33 +354,26 @@ void OxEd_GUI::Term()
 
 void OxEd_GUI::Debug_AddDefaultFiles()
 {
-    FileContentsT DebugFile = {};
-
-    static bool bUseLongFile = true;
-    if (bUseLongFile)
+    auto InitDefaultHexFile = [](size_t Size, HexFile& OutHex)
     {
-        constexpr int LongFileSize = 256 * 256;
-        DebugFile.Name = new char[FileContentsT::MaxNameSize];
-        sprintf(DebugFile.Name, "[debug_long]");
-        DebugFile.Size = LongFileSize;
-    }
-    else
-    {
-        constexpr int ShortFileSize = 256;
-        DebugFile.Name = new char[FileContentsT::MaxNameSize];
-        sprintf(DebugFile.Name, "[debug_short]");
-        DebugFile.Size = ShortFileSize;
+        FileContentsT DebugFile = { new char[FileContentsT::MaxNameSize], Size, new u8[Size] };
+        sprintf(DebugFile.Name, "[debug_%llu]", Size);
+        for (int Idx = 0; Idx < DebugFile.Size; Idx++)
+        {
+            DebugFile.Contents[Idx] = (u8)(Idx % 256);
+        }
+        OutHex.SetFile(DebugFile);
+    };
+    constexpr int LongFileSize = 256 * 256;
+    constexpr int ShortFileSize = 256;
 
-    }
-    DebugFile.Contents = new u8[DebugFile.Size];
-    for (int Idx = 0; Idx < DebugFile.Size; Idx++)
-    {
-        DebugFile.Contents[Idx] = (u8)(Idx % 256);
-    }
+    HexFile LongHexFile = {};
+    InitDefaultHexFile(LongFileSize, LongHexFile);
+    OpenFiles.Add(LongHexFile);
 
-    HexFile DebugFileHex = {};
-    DebugFileHex.SetFile(DebugFile);
-    OpenFiles.Add(DebugFileHex);
+    HexFile ShortHexFile = {};
+    InitDefaultHexFile(ShortFileSize, ShortHexFile);
+    OpenFiles.Add(ShortHexFile);
 }
 
 struct OxEd

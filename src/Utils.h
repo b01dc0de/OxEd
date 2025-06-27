@@ -61,7 +61,7 @@ struct Array
     {
         if (Idx < Num)
         {
-            for (int ShiftIdx = Idx; ShiftIdx < Num - 1; ShiftIdx++)
+            for (size_t ShiftIdx = Idx; ShiftIdx < Num - 1; ShiftIdx++)
             {
                 Data[ShiftIdx] = Data[ShiftIdx + 1];
             }
